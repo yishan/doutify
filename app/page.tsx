@@ -7,39 +7,90 @@ export default function Home() {
   const [query, setQuery] = useState('');
   const [albums, setAlbums] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [hasSearched, setHasSearched] = useState(false);
+  const [totalResults, setTotalResults] = useState(0);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc' | null>(null);
 
-  const searchAlbums = async (e: React.FormEvent) => {
-    e.preventDefault();
-    e.preventDefault();
+  const ITEMS_PER_PAGE = 16;
+  const MAX_RESULTS = 100;
+
+  const searchAlbums = async (e?: React.FormEvent, page = 1) => {
+    if (e) e.preventDefault();
     if (!query) return;
 
     setLoading(true);
-    setError('');
-    setAlbums([]);
+    setHasSearched(true);
 
     try {
-      const res = await fetch(`/api/spotify/search?q=${encodeURIComponent(query)}`);
+      const offset = (page - 1) * ITEMS_PER_PAGE;
+      const res = await fetch(`/api/spotify/search?q=${encodeURIComponent(query)}&limit=${ITEMS_PER_PAGE}&offset=${offset}`);
       const data = await res.json();
 
       if (data.error) {
-        setError(data.error);
+        setAlbums([]);
+        setTotalResults(0);
       } else {
-        setAlbums(data.albums.items);
+        let items = data.albums.items;
+
+        // Only sort if a specific order is selected
+        if (sortOrder) {
+          items.sort((a: any, b: any) => {
+            const dateA = new Date(a.release_date).getTime();
+            const dateB = new Date(b.release_date).getTime();
+            return sortOrder === 'asc' ? dateA - dateB : dateB - dateA;
+          });
+        }
+
+        setAlbums(items);
+        // Cap total results at 100
+        setTotalResults(Math.min(data.albums.total, MAX_RESULTS));
+        setCurrentPage(page);
       }
     } catch (err) {
-      setError('Something went wrong. Please try again.');
+      setAlbums([]);
+      setTotalResults(0);
     } finally {
       setLoading(false);
     }
   };
 
-  return (
-    <div className="min-h-screen bg-gray-900 text-white p-8 font-sans">
-      <div className="max-w-4xl mx-auto">
-        <h1 className="text-4xl font-bold mb-8 text-center text-green-500">Spotify Album Search</h1>
+  const handleSortChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const value = e.target.value;
+    let newOrder: 'asc' | 'desc' | null = null;
 
-        <form onSubmit={searchAlbums} className="flex gap-4 mb-12">
+    if (value === 'desc') newOrder = 'desc';
+    else if (value === 'asc') newOrder = 'asc';
+
+    setSortOrder(newOrder);
+
+    // Re-sort current albums immediately if we have them
+    if (albums.length > 0) {
+      if (newOrder === null) {
+        // If switching back to relevance, re-fetch current page to restore order.
+        searchAlbums(undefined, currentPage);
+      } else {
+        const sorted = [...albums].sort((a: any, b: any) => {
+          const dateA = new Date(a.release_date).getTime();
+          const dateB = new Date(b.release_date).getTime();
+          return newOrder === 'asc' ? dateA - dateB : dateB - dateA;
+        });
+        setAlbums(sorted);
+      }
+    }
+  };
+
+  const handlePageChange = (newPage: number) => {
+    if (newPage < 1 || (newPage - 1) * ITEMS_PER_PAGE >= totalResults) return;
+    searchAlbums(undefined, newPage);
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-900 text-white p-8 font-sans flex flex-col">
+      <div className="max-w-6xl mx-auto w-full flex-1">
+        <h1 className="text-4xl font-bold mb-8 text-center text-green-500">Doutify Search</h1>
+
+        <form onSubmit={(e) => searchAlbums(e, 1)} className="flex gap-4 mb-4">
           <input
             type="text"
             value={query}
@@ -52,17 +103,40 @@ export default function Home() {
             disabled={loading}
             className="px-8 py-4 bg-green-500 hover:bg-green-600 rounded-lg font-bold transition-colors disabled:opacity-50"
           >
-            {loading ? 'Searching...' : 'Search'}
+            {loading ? '...' : 'Search'}
           </button>
         </form>
 
-        {error && (
-          <div className="p-4 mb-8 bg-red-500/20 border border-red-500 rounded-lg text-red-200">
-            {error}
+        <div className="flex justify-between items-center mb-8 h-10">
+          {totalResults > 0 && (
+            <div className="text-gray-400 text-sm">
+              Total Results: {totalResults.toLocaleString()}
+            </div>
+          )}
+
+          {albums.length > 0 && (
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-gray-400">Sort by:</span>
+              <select
+                value={sortOrder || ''}
+                onChange={handleSortChange}
+                className="bg-gray-800 text-white text-sm border border-gray-700 rounded-lg px-3 py-2 focus:outline-none focus:border-green-500"
+              >
+                <option value="">Relevance</option>
+                <option value="desc">Newest First</option>
+                <option value="asc">Oldest First</option>
+              </select>
+            </div>
+          )}
+        </div>
+
+        {hasSearched && !loading && albums.length === 0 && (
+          <div className="p-8 text-center text-gray-400 text-xl">
+            No result
           </div>
         )}
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 mb-12">
           {albums.map((album) => (
             <div key={album.id} className="group relative bg-gray-800 rounded-lg overflow-hidden hover:bg-gray-750 transition-colors h-full flex flex-col">
               <Link href={`/album/${album.id}`} className="absolute inset-0 z-0">
@@ -89,29 +163,40 @@ export default function Home() {
                     {album.genres.join(', ')}
                   </p>
                 )}
-                <p className="text-sm text-gray-500 mt-2">{album.release_date} • {album.total_tracks} tracks</p>
-                <div className="mt-auto pt-4 flex justify-between items-center">
-                  <span className="text-green-400 text-sm font-medium group-hover:underline">
-                    View Details
-                  </span>
-                  <a
-                    href={album.external_urls.spotify}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    onClick={(e) => e.stopPropagation()}
-                    className="text-gray-500 hover:text-white relative z-10 pointer-events-auto"
-                    title="Open in Spotify"
-                  >
-                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                      <path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141 4.32-1.32 9.84-.6 13.561 1.621.42.3.539.84.24 1.2zm.119-3.3c-3.839-2.28-10.26-2.46-13.98-1.32-.6.181-1.2-.179-1.38-.779-.181-.6.179-1.2.779-1.38 4.32-1.32 11.34-1.08 15.72 1.56.6.36.84 1.02.479 1.62-.36.601-1.02.84-1.62.48z" />
-                    </svg>
-                  </a>
-                </div>
+                <p className="text-sm text-gray-500 mt-2">
+                  {album.album_type.charAt(0).toUpperCase() + album.album_type.slice(1)} • {album.release_date.split('-')[0]} • {album.total_tracks} songs
+                </p>
               </div>
             </div>
           ))}
         </div>
+
+        {totalResults > 0 && (
+          <div className="flex justify-center gap-4 mb-12">
+            <button
+              onClick={() => handlePageChange(currentPage - 1)}
+              disabled={currentPage === 1 || loading}
+              className="px-6 py-3 bg-gray-800 hover:bg-gray-700 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              Previous
+            </button>
+            <span className="flex items-center px-4 font-mono text-gray-400">
+              Page {currentPage}
+            </span>
+            <button
+              onClick={() => handlePageChange(currentPage + 1)}
+              disabled={(currentPage * ITEMS_PER_PAGE) >= totalResults || loading}
+              className="px-6 py-3 bg-gray-800 hover:bg-gray-700 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              Next
+            </button>
+          </div>
+        )}
       </div>
+
+      <footer className="text-center text-gray-500 py-8 border-t border-gray-800 mt-auto">
+        <p>Made by Yishan with Gemini</p>
+      </footer>
     </div>
   );
 }

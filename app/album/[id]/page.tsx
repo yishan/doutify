@@ -93,9 +93,6 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
                                     <span className="font-semibold text-gray-500">Genres:</span> {album.genres.join(', ')}
                                 </p>
                             )}
-                            <p className="mt-2 text-gray-500">
-                                {album.total_tracks} songs • {new Date(album.tracks.items.reduce((acc: number, track: any) => acc + track.duration_ms, 0)).toISOString().substr(11, 8)} duration
-                            </p>
                         </div>
 
                         <div className="mt-6 flex flex-col md:flex-row gap-4 items-center md:items-start">
@@ -111,24 +108,16 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
                                 Open in Spotify
                             </a>
                         </div>
-
-                        {album.external_ids && Object.keys(album.external_ids).length > 0 && (
-                            <div className="mt-4 p-4 bg-gray-800/30 rounded-lg text-sm text-gray-400 text-left">
-                                <h3 className="font-semibold text-gray-500 mb-2 uppercase tracking-wider text-xs">External IDs</h3>
-                                <div className="grid grid-cols-2 gap-2">
-                                    {Object.entries(album.external_ids).map(([key, value]) => (
-                                        <div key={key}>
-                                            <span className="font-mono text-gray-500 uppercase">{key}:</span> <span className="font-mono text-gray-300">{value as string}</span>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                        )}
                     </div>
                 </div>
 
-                <div className="bg-gray-800/50 rounded-xl p-6 backdrop-blur-sm">
-                    <h2 className="text-2xl font-bold mb-6 text-green-500">Track List</h2>
+                <div className="bg-gray-800/50 rounded-xl p-6 backdrop-blur-sm mb-8">
+                    <div className="flex justify-between items-center mb-6">
+                        <h2 className="font-semibold text-gray-500 mb-4 uppercase tracking-wider text-xs">Track List</h2>
+                        <p className="text-gray-400 text-sm">
+                            {album.total_tracks} songs • {new Date(album.tracks.items.reduce((acc: number, track: any) => acc + track.duration_ms, 0)).toISOString().substr(11, 8)}
+                        </p>
+                    </div>
                     <div className="space-y-2">
                         {album.tracks.items.map((track: any, index: number) => (
                             <div
@@ -151,6 +140,20 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
                         ))}
                     </div>
                 </div>
+
+                {album.external_ids && Object.keys(album.external_ids).length > 0 && (
+                    <div className="bg-gray-800/30 rounded-xl p-6 backdrop-blur-sm">
+                        <h3 className="font-semibold text-gray-500 mb-4 uppercase tracking-wider text-xs">External IDs</h3>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            {Object.entries(album.external_ids).map(([key, value]) => (
+                                <div key={key}>
+                                    <span className="font-mono text-gray-500 uppercase block text-xs mb-1">{key}</span>
+                                    <span className="font-mono text-gray-300">{value as string}</span>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     );
