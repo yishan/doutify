@@ -8,6 +8,8 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
     const [album, setAlbum] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
+    const [discoveryAlbums, setDiscoveryAlbums] = useState<any[]>([]);
+    const [loadingDiscovery, setLoadingDiscovery] = useState(true);
 
     useEffect(() => {
         const fetchAlbum = async () => {
@@ -29,6 +31,31 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
 
         fetchAlbum();
     }, [id]);
+
+    useEffect(() => {
+        const fetchDiscovery = async () => {
+            if (!album || !album.artists || album.artists.length === 0) return;
+
+            setLoadingDiscovery(true);
+            try {
+                const artistId = album.artists[0].id;
+                const res = await fetch(`/api/spotify/artist/${artistId}/albums`);
+                const data = await res.json();
+
+                if (data.items) {
+                    setDiscoveryAlbums(data.items);
+                }
+            } catch (err) {
+                console.error('Failed to fetch discovery albums', err);
+            } finally {
+                setLoadingDiscovery(false);
+            }
+        };
+
+        if (album) {
+            fetchDiscovery();
+        }
+    }, [album]);
 
     if (loading) {
         return (
@@ -145,7 +172,7 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
                 </div>
 
                 {album.external_ids && Object.keys(album.external_ids).length > 0 && (
-                    <div className="bg-gray-800/30 rounded-xl p-6 backdrop-blur-sm">
+                    <div className="bg-gray-800/30 rounded-xl p-6 backdrop-blur-sm mb-8">
                         <h3 className="font-semibold text-gray-500 mb-4 uppercase tracking-wider text-xs">External IDs</h3>
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                             {Object.entries(album.external_ids).map(([key, value]) => (
@@ -157,6 +184,47 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
                         </div>
                     </div>
                 )}
+
+                <div className="mt-12">
+                    <h2 className="text-2xl font-bold mb-6 text-white">Discovery</h2>
+                    {loadingDiscovery ? (
+                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                            {[...Array(6)].map((_, i) => (
+                                <div key={i} className="bg-gray-800/50 rounded-lg p-3 animate-pulse">
+                                    <div className="aspect-square bg-gray-700 rounded-md mb-3"></div>
+                                    <div className="h-4 bg-gray-700 rounded w-3/4 mb-2"></div>
+                                    <div className="h-3 bg-gray-700 rounded w-1/2"></div>
+                                </div>
+                            ))}
+                        </div>
+                    ) : (
+                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                            {discoveryAlbums.map((item: any) => (
+                                <Link href={`/album/${item.id}`} key={item.id} className="group block bg-gray-800/50 rounded-lg p-3 hover:bg-gray-800 transition-colors">
+                                    <div className="relative aspect-square mb-3 overflow-hidden rounded-md">
+                                        {item.images && item.images[0] ? (
+                                            <img
+                                                src={item.images[0].url}
+                                                alt={item.name}
+                                                className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-300"
+                                            />
+                                        ) : (
+                                            <div className="w-full h-full bg-gray-700 flex items-center justify-center text-gray-500 text-xs">
+                                                No Cover
+                                            </div>
+                                        )}
+                                    </div>
+                                    <h3 className="font-medium text-sm text-gray-200 truncate group-hover:text-white mb-1" title={item.name}>
+                                        {item.name}
+                                    </h3>
+                                    <p className="text-xs text-gray-500">
+                                        {item.release_date.split('-')[0]}
+                                    </p>
+                                </Link>
+                            ))}
+                        </div>
+                    )}
+                </div>
             </div>
         </div>
     );
