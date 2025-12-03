@@ -80,6 +80,9 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
                         </p>
                         <div className="text-sm text-gray-400 space-y-1">
                             <p>
+                                <span className="font-semibold text-gray-500">Type:</span> {album.album_type.charAt(0).toUpperCase() + album.album_type.slice(1)}
+                            </p>
+                            <p>
                                 <span className="font-semibold text-gray-500">Label:</span> {album.label}
                             </p>
                             <p>

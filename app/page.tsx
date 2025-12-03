@@ -164,7 +164,7 @@ export default function Home() {
                   </p>
                 )}
                 <p className="text-sm text-gray-500 mt-2">
-                  {album.album_type.charAt(0).toUpperCase() + album.album_type.slice(1)} • {album.release_date.split('-')[0]} • {album.total_tracks} songs
+                  {album.album_type.charAt(0).toUpperCase() + album.album_type.slice(1)} • {album.release_date.split('-')[0]} • {album.total_tracks} {album.total_tracks === 1 ? 'song' : 'songs'}
                 </p>
               </div>
             </div>
