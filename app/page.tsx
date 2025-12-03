@@ -2,7 +2,6 @@
 
 import Link from 'next/link';
 import { useState } from 'react';
-import Image from 'next/image';
 
 export default function Home() {
   const [query, setQuery] = useState('');
@@ -71,13 +70,10 @@ export default function Home() {
               </Link>
               <div className="relative aspect-square pointer-events-none">
                 {album.images && album.images.length > 0 ? (
-                  <Image
+                  <img
                     src={album.images[0].url}
                     alt={`Cover art for ${album.name}`}
-                    fill
-                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                    className="object-cover transition-transform duration-300 group-hover:scale-105"
-                    priority={false}
+                    className="object-cover w-full h-full transition-transform duration-300 group-hover:scale-105"
                   />
                 ) : (
                   <div className="w-full h-full bg-gray-700 flex items-center justify-center text-gray-500">
@@ -88,6 +84,11 @@ export default function Home() {
               <div className="p-4 flex-1 flex flex-col pointer-events-none">
                 <h2 className="font-bold text-lg truncate" title={album.name}>{album.name}</h2>
                 <p className="text-gray-400 truncate">{album.artists.map((a: any) => a.name).join(', ')}</p>
+                {album.genres && album.genres.length > 0 && (
+                  <p className="text-xs text-gray-500 mt-1 truncate">
+                    {album.genres.join(', ')}
+                  </p>
+                )}
                 <p className="text-sm text-gray-500 mt-2">{album.release_date} • {album.total_tracks} tracks</p>
                 <div className="mt-auto pt-4 flex justify-between items-center">
                   <span className="text-green-400 text-sm font-medium group-hover:underline">
