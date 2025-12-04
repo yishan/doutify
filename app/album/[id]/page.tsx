@@ -11,7 +11,7 @@ const CopyButton = ({ text, className = "" }: { text: string, className?: string
         e.stopPropagation();
         navigator.clipboard.writeText(text).then(() => {
             setCopied(true);
-            setTimeout(() => setCopied(false), 500);
+            setTimeout(() => setCopied(false), 1000);
         });
     };
 
@@ -206,8 +206,8 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
                             <button
                                 onClick={handleCopyTrackList}
                                 className={`text-xs px-3 py-1 rounded-full transition-all duration-300 ${copied
-                                        ? 'bg-green-500 text-white'
-                                        : 'bg-gray-700 text-gray-300 hover:bg-gray-600 hover:text-white'
+                                    ? 'bg-green-500 text-white'
+                                    : 'bg-gray-700 text-gray-300 hover:bg-gray-600 hover:text-white'
                                     }`}
                             >
                                 {copied ? 'Copied!' : 'Copy'}
@@ -256,6 +256,14 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
                         </div>
                     </div>
                 )}
+
+                <div className="bg-gray-800/30 rounded-xl p-6 backdrop-blur-sm mb-8">
+                    <h3 className="font-semibold text-gray-500 mb-4 uppercase tracking-wider text-xs">Link</h3>
+                    <div className="flex items-center gap-2">
+                        <span className="font-mono text-gray-300 break-all">{album.external_urls.spotify}</span>
+                        <CopyButton text={album.external_urls.spotify} />
+                    </div>
+                </div>
 
                 <div className="mt-12">
                     <h2 className="text-2xl font-bold mb-6 text-white">Discovery</h2>
