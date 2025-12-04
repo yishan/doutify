@@ -32,8 +32,8 @@ export default function NewReleases() {
         return (
             <div className="max-w-3xl mx-auto mb-12">
                 <h2 className="text-2xl font-bold mb-4 mt-12 text-white">Discovery</h2>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                    {[...Array(6)].map((_, i) => (
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    {[...Array(8)].map((_, i) => (
                         <div key={i} className="bg-gray-800 rounded-lg h-64 animate-pulse"></div>
                     ))}
                 </div>
@@ -46,8 +46,8 @@ export default function NewReleases() {
     return (
         <div className="max-w-3xl mx-auto mb-12">
             <h2 className="text-2xl font-bold mb-4 mt-12 text-white">Discovery</h2>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                {albums.slice(0, 6).map((album) => (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {albums.slice(0, 8).map((album) => (
                     <div key={album.id} className="group relative bg-gray-800 rounded-lg overflow-hidden hover:bg-gray-750 transition-colors flex flex-col">
                         <Link
                             href={`/album/${album.id}`}
