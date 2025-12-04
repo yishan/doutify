@@ -11,6 +11,21 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
     const [discoveryAlbums, setDiscoveryAlbums] = useState<any[]>([]);
     const [loadingDiscovery, setLoadingDiscovery] = useState(true);
 
+    const [copied, setCopied] = useState(false);
+
+    const handleCopyTrackList = () => {
+        if (!album || !album.tracks || !album.tracks.items) return;
+
+        const trackListText = album.tracks.items
+            .map((track: any, index: number) => `${index + 1}. ${track.name}`)
+            .join('\n');
+
+        navigator.clipboard.writeText(trackListText).then(() => {
+            setCopied(true);
+            setTimeout(() => setCopied(false), 2000);
+        });
+    };
+
     useEffect(() => {
         const fetchAlbum = async () => {
             try {
@@ -143,7 +158,18 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
 
                 <div className="bg-gray-800/50 rounded-xl p-6 backdrop-blur-sm mb-8">
                     <div className="flex justify-between items-center mb-6">
-                        <h2 className="font-semibold text-gray-500 mb-4 uppercase tracking-wider text-xs">Track List</h2>
+                        <div className="flex items-center gap-4">
+                            <h2 className="font-semibold text-gray-500 uppercase tracking-wider text-xs">Track List</h2>
+                            <button
+                                onClick={handleCopyTrackList}
+                                className={`text-xs px-3 py-1 rounded-full transition-all duration-300 ${copied
+                                        ? 'bg-green-500 text-white'
+                                        : 'bg-gray-700 text-gray-300 hover:bg-gray-600 hover:text-white'
+                                    }`}
+                            >
+                                {copied ? 'Copied!' : 'Copy List'}
+                            </button>
+                        </div>
                         <p className="text-gray-400 text-sm">
                             {album.total_tracks} songs • {new Date(album.tracks.items.reduce((acc: number, track: any) => acc + track.duration_ms, 0)).toISOString().substr(11, 8)}
                         </p>

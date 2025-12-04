@@ -88,9 +88,9 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-gray-900 text-white p-8 font-sans flex flex-col">
       <div className="max-w-6xl mx-auto w-full flex-1">
-        <h1 className="text-4xl font-bold mb-8 text-center text-green-500">Doutify Search</h1>
+        <h1 className="text-4xl font-bold mb-8 text-center text-green-500">Doutify</h1>
 
-        <form onSubmit={(e) => searchAlbums(e, 1)} className="flex gap-4 mb-4">
+        <form onSubmit={(e) => searchAlbums(e, 1)} className="flex gap-4 mb-4 max-w-3xl mx-auto">
           <input
             type="text"
             value={query}

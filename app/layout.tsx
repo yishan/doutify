@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Doutify Search",
+  title: "Doutify",
   description: "Search for your favorite albums and artists on Doutify. Explore album details, tracks, and more.",
   keywords: "spotify, music, album, search, artist, tracks, doutify, lyrics, discography",
 };
