@@ -5,13 +5,11 @@ import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import NewReleases from './components/NewReleases';
 import Footer from './components/Footer';
-import { useToast } from '@/components/ToastContext';
 
 function SearchContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
-  const { showToast } = useToast();
 
   const initialQuery = searchParams.get('q') || '';
   const initialPage = parseInt(searchParams.get('page') || '1');
@@ -56,13 +54,6 @@ function SearchContent() {
     try {
       const offset = (page - 1) * ITEMS_PER_PAGE;
       const res = await fetch(`/api/spotify/search?q=${encodeURIComponent(searchQuery)}&type=album,artist`);
-
-      if (res.status === 429) {
-        showToast("reach rate limit, retry after 5 minutes");
-        setLoading(false);
-        return;
-      }
-
       const data = await res.json();
 
       if (data.error) {
