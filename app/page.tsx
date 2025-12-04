@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import NewReleases from './components/NewReleases';
+import Footer from './components/Footer';
 
 function SearchContent() {
   const searchParams = useSearchParams();
@@ -20,8 +21,7 @@ function SearchContent() {
   const [totalResults, setTotalResults] = useState(0);
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc' | null>(null);
 
-  const ITEMS_PER_PAGE = 32;
-  const MAX_RESULTS = 100;
+  const ITEMS_PER_PAGE = 15;
 
   // Sync query state with URL param if it changes externally (e.g. back button)
   useEffect(() => {
@@ -72,8 +72,8 @@ function SearchContent() {
         }
 
         setAlbums(items);
-        // Cap total results at 100
-        setTotalResults(Math.min(data.albums.total, MAX_RESULTS));
+        // Set total results to the actual total from API
+        setTotalResults(data.albums.total);
       }
     } catch (err) {
       setAlbums([]);
@@ -156,7 +156,7 @@ function SearchContent() {
 
       {!hasSearched && <NewReleases />}
 
-      <div className="flex justify-between items-center mb-8 h-10">
+      <div className="flex justify-between items-center mb-8 h-10 max-w-3xl mx-auto w-full">
         {totalResults > 0 && (
           <div className="text-gray-400 text-sm">
             Total Results: {totalResults.toLocaleString()}
@@ -180,12 +180,12 @@ function SearchContent() {
       </div>
 
       {hasSearched && !loading && albums.length === 0 && (
-        <div className="p-8 text-center text-gray-400 text-xl">
+        <div className="p-8 text-center text-gray-400 text-xl max-w-3xl mx-auto w-full">
           No result
         </div>
       )}
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 mb-12">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 mb-12 max-w-3xl mx-auto w-full">
         {albums.map((album) => (
           <div key={album.id} className="group relative bg-gray-800 rounded-lg overflow-hidden hover:bg-gray-750 transition-colors h-full flex flex-col">
             <Link
@@ -250,13 +250,11 @@ function SearchContent() {
 
 export default function Home() {
   return (
-    <div className="min-h-screen bg-gray-900 text-white p-8 font-sans flex flex-col">
+    <div className="min-h-screen bg-gray-900 text-white p-8 font-sans flex flex-col gap-6">
       <Suspense fallback={<div className="text-center text-green-500">Loading search...</div>}>
         <SearchContent />
       </Suspense>
-      <footer className="text-center text-gray-500 py-8 border-t border-gray-800 mt-auto">
-        <p>Made by <a href="https://yishan.li" target="_blank" rel="noopener noreferrer" className="hover:text-green-500 transition-colors">Yishan</a> with Gemini</p>
-      </footer>
+      <Footer />
     </div>
   );
 }

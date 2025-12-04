@@ -27,7 +27,7 @@ export default function NewReleases() {
     }, []);
 
     return (
-        <div className="min-h-screen bg-gray-900 text-white p-8 font-sans flex flex-col">
+        <div className="min-h-screen bg-gray-900 text-white p-8 font-sans flex flex-col gap-6">
             <div className="max-w-6xl mx-auto w-full flex-1">
                 <div className="flex justify-center mb-8">
                     <Link href="/" className="p-4 rounded-lg transition-colors">

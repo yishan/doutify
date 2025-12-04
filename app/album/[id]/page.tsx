@@ -4,6 +4,7 @@ import { useState, useEffect, use } from 'react';
 import Link from 'next/link';
 
 import { useSearchParams } from 'next/navigation';
+import Footer from '../../components/Footer';
 
 const CopyButton = ({ text, className = "" }: { text: string, className?: string }) => {
     const [copied, setCopied] = useState(false);
@@ -135,7 +136,7 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
     }
 
     return (
-        <div className="min-h-screen bg-gray-900 text-white p-8 font-sans">
+        <div className="min-h-screen bg-gray-900 text-white p-8 font-sans flex flex-col gap-6">
             <div className="max-w-4xl mx-auto relative">
                 <div className="flex justify-between items-center mb-8">
                     <Link href={backLink} className="text-gray-400 hover:text-white transition-colors">
@@ -321,6 +322,7 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
                     )}
                 </div>
             </div>
+            <Footer />
         </div>
     );
 }
