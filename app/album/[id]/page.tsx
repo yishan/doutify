@@ -3,6 +3,8 @@
 import { useState, useEffect, use } from 'react';
 import Link from 'next/link';
 
+import { useSearchParams } from 'next/navigation';
+
 const CopyButton = ({ text, className = "" }: { text: string, className?: string }) => {
     const [copied, setCopied] = useState(false);
 
@@ -38,6 +40,10 @@ const CopyButton = ({ text, className = "" }: { text: string, className?: string
 
 export default function AlbumPage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = use(params);
+    const searchParams = useSearchParams();
+    const sourceQ = searchParams.get('source_q');
+    const sourcePage = searchParams.get('source_page');
+
     const [album, setAlbum] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
@@ -105,6 +111,10 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
         }
     }, [album]);
 
+    const backLink = sourceQ
+        ? `/?q=${sourceQ}&page=${sourcePage || 1}`
+        : '/';
+
     if (loading) {
         return (
             <div className="min-h-screen bg-gray-900 text-white flex items-center justify-center">
@@ -117,7 +127,7 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
         return (
             <div className="min-h-screen bg-gray-900 text-white flex flex-col items-center justify-center p-8">
                 <div className="text-red-400 text-xl mb-4">{error || 'Album not found'}</div>
-                <Link href="/" className="text-green-500 hover:text-green-400 font-bold">
+                <Link href={backLink} className="text-green-500 hover:text-green-400 font-bold">
                     ← Back to Search
                 </Link>
             </div>
@@ -127,7 +137,7 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
     return (
         <div className="min-h-screen bg-gray-900 text-white p-8 font-sans">
             <div className="max-w-4xl mx-auto">
-                <Link href="/" className="inline-block mb-8 text-gray-400 hover:text-white transition-colors">
+                <Link href={backLink} className="inline-block mb-8 text-gray-400 hover:text-white transition-colors">
                     ← Back to Search
                 </Link>
 
