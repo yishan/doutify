@@ -19,7 +19,7 @@ function SearchContent() {
   const [totalResults, setTotalResults] = useState(0);
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc' | null>(null);
 
-  const ITEMS_PER_PAGE = 16;
+  const ITEMS_PER_PAGE = 32;
   const MAX_RESULTS = 100;
 
   // Sync query state with URL param if it changes externally (e.g. back button)
@@ -52,7 +52,7 @@ function SearchContent() {
 
     try {
       const offset = (page - 1) * ITEMS_PER_PAGE;
-      const res = await fetch(`/api/spotify/search?q=${encodeURIComponent(searchQuery)}&limit=${ITEMS_PER_PAGE}&offset=${offset}`);
+      const res = await fetch(`/api/spotify/search?q=${encodeURIComponent(searchQuery)}&type=album,artist`);
       const data = await res.json();
 
       if (data.error) {

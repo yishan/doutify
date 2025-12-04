@@ -5,8 +5,8 @@ import { getAccessToken } from '@/lib/spotify';
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const query = searchParams.get('q');
-  const limit = searchParams.get('limit') || '20';
-  const offset = searchParams.get('offset') || '0';
+  const type = searchParams.get('type') || 'album,artist';
+
 
   if (!query) {
     return NextResponse.json({ error: 'Missing query parameter' }, { status: 400 });
@@ -17,7 +17,7 @@ export async function GET(request: Request) {
 
     // Pass the query directly to Spotify to search across all fields (album, artist, etc.)
     // We still restrict type to 'album' as we are searching for albums
-    const response = await fetch(`https://api.spotify.com/v1/search?q=${encodeURIComponent(query)}&type=album&limit=${limit}&offset=${offset}`, {
+    const response = await fetch(`https://api.spotify.com/v1/search?q=${encodeURIComponent(query)}&type=${type}`, {
       headers: {
         Authorization: `Bearer ${token}`,
       },
