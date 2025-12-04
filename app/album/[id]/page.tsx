@@ -3,6 +3,39 @@
 import { useState, useEffect, use } from 'react';
 import Link from 'next/link';
 
+const CopyButton = ({ text, className = "" }: { text: string, className?: string }) => {
+    const [copied, setCopied] = useState(false);
+
+    const handleCopy = (e: React.MouseEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        navigator.clipboard.writeText(text).then(() => {
+            setCopied(true);
+            setTimeout(() => setCopied(false), 500);
+        });
+    };
+
+    return (
+        <button
+            onClick={handleCopy}
+            className={`inline-flex items-center justify-center text-gray-500 hover:text-white transition-colors ${className}`}
+            title="Copy"
+        >
+            <div className={`transition-all duration-300 transform ${copied ? 'scale-100 rotate-0' : 'scale-100 rotate-0'}`}>
+                {copied ? (
+                    <svg className="w-4 h-4 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                ) : (
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                    </svg>
+                )}
+            </div>
+        </button>
+    );
+};
+
 export default function AlbumPage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = use(params);
     const [album, setAlbum] = useState<any>(null);
@@ -116,17 +149,27 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
                     </div>
 
                     <div className="flex flex-col justify-end text-center md:text-left">
-                        <h1 className="text-4xl md:text-6xl font-bold mb-2">{album.name}</h1>
-                        <p className="text-xl md:text-2xl text-gray-300 mb-4">
-                            {album.artists.map((a: any) => a.name).join(', ')}
-                        </p>
+                        <div className="flex items-center justify-center md:justify-start gap-3 mb-2">
+                            <h1 className="text-3xl md:text-5xl font-bold">
+                                {album.name}
+                            </h1>
+                            <CopyButton text={album.name} />
+                        </div>
+                        <div className="flex items-center justify-center md:justify-start gap-2 mb-4">
+                            <p className="text-xl md:text-2xl text-gray-300">
+                                {album.artists.map((a: any) => a.name).join(', ')}
+                            </p>
+                            <CopyButton text={album.artists.map((a: any) => a.name).join(', ')} />
+                        </div>
                         <div className="text-sm text-gray-400 space-y-1">
                             <p>
                                 <span className="font-semibold text-gray-500">Type:</span> {album.album_type.charAt(0).toUpperCase() + album.album_type.slice(1)}
                             </p>
-                            <p>
-                                <span className="font-semibold text-gray-500">Label:</span> {album.label}
-                            </p>
+                            <div className="flex items-center gap-2">
+                                <span className="font-semibold text-gray-500">Label:</span>
+                                <span>{album.label}</span>
+                                <CopyButton text={album.label} />
+                            </div>
                             <p>
                                 <span className="font-semibold text-gray-500">Release Date:</span> {album.release_date}
                             </p>
@@ -167,7 +210,7 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
                                         : 'bg-gray-700 text-gray-300 hover:bg-gray-600 hover:text-white'
                                     }`}
                             >
-                                {copied ? 'Copied!' : 'Copy List'}
+                                {copied ? 'Copied!' : 'Copy'}
                             </button>
                         </div>
                         <p className="text-gray-400 text-sm">
@@ -204,7 +247,10 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
                             {Object.entries(album.external_ids).map(([key, value]) => (
                                 <div key={key}>
                                     <span className="font-mono text-gray-500 uppercase block text-xs mb-1">{key}</span>
-                                    <span className="font-mono text-gray-300">{value as string}</span>
+                                    <div className="flex items-center gap-2">
+                                        <span className="font-mono text-gray-300">{value as string}</span>
+                                        <CopyButton text={value as string} />
+                                    </div>
                                 </div>
                             ))}
                         </div>
