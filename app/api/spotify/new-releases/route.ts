@@ -29,7 +29,7 @@ export async function GET() {
 
                     // Randomly select up to 6 IDs
                     const shuffled = uniqueIds.sort(() => 0.5 - Math.random());
-                    albumIds = shuffled.slice(0, 6);
+                    albumIds = shuffled.slice(0, 8);
                 }
             }
         } catch (readError) {
