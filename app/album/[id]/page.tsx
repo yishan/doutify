@@ -136,10 +136,15 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
 
     return (
         <div className="min-h-screen bg-gray-900 text-white p-8 font-sans">
-            <div className="max-w-4xl mx-auto">
-                <Link href={backLink} className="inline-block mb-8 text-gray-400 hover:text-white transition-colors">
-                    ← Back to Search
-                </Link>
+            <div className="max-w-4xl mx-auto relative">
+                <div className="flex justify-between items-center mb-8">
+                    <Link href={backLink} className="text-gray-400 hover:text-white transition-colors">
+                        ← Back to Search
+                    </Link>
+                    <Link href="/" className="text-gray-400 hover:text-white transition-colors font-bold">
+                        Home
+                    </Link>
+                </div>
 
                 <div className="flex flex-col md:flex-row gap-8 mb-12">
                     <div className="relative w-[300px] h-[300px] flex-shrink-0 mx-auto md:mx-0 shadow-2xl">
