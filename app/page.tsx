@@ -130,7 +130,11 @@ function SearchContent() {
 
   return (
     <div className="max-w-6xl mx-auto w-full flex-1">
-      <h1 className="text-4xl font-bold mb-8 text-center text-green-500">Doutify</h1>
+      <div className="flex justify-center mb-8">
+        <Link href="/" className="p-4 rounded-lg transition-colors">
+          <h1 className="text-4xl font-bold text-green-500">Doutify</h1>
+        </Link>
+      </div>
 
       <form onSubmit={handleSearch} className="flex gap-4 mb-4 max-w-3xl mx-auto">
         <input
