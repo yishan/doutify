@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
+import NewReleases from './components/NewReleases';
 
 function SearchContent() {
   const searchParams = useSearchParams();
@@ -152,6 +153,8 @@ function SearchContent() {
           {loading ? '...' : 'Search'}
         </button>
       </form>
+
+      {!hasSearched && <NewReleases />}
 
       <div className="flex justify-between items-center mb-8 h-10">
         {totalResults > 0 && (
