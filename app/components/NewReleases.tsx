@@ -2,10 +2,12 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useToast } from '@/components/ToastContext';
 
 export default function NewReleases() {
     const [albums, setAlbums] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+    const { showToast } = useToast();
 
     useEffect(() => {
         const fetchNewReleases = async () => {
@@ -14,6 +16,11 @@ export default function NewReleases() {
 
             try {
                 const res = await fetch('/api/spotify/new-releases');
+                if (res.status === 429) {
+                    showToast("reach rate limit, retry after 5 minutes");
+                    setLoading(false);
+                    return;
+                }
                 const data = await res.json();
                 if (data.albums && data.albums.items) {
                     setAlbums(data.albums.items);

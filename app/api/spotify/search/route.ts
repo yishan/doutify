@@ -12,6 +12,8 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: 'Missing query parameter' }, { status: 400 });
   }
 
+  return NextResponse.json({ error: 'Rate limit exceeded' }, { status: 429 });
+
   try {
     const token = await getAccessToken();
 
