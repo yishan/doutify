@@ -180,7 +180,7 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
                             <p>
                                 <span className="font-semibold text-gray-500">Type:</span> {album.album_type.charAt(0).toUpperCase() + album.album_type.slice(1)}
                             </p>
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center justify-center md:justify-start gap-2">
                                 <span className="font-semibold text-gray-500">Label:</span>
                                 <span>{album.label}</span>
                                 <CopyButton text={album.label} />
