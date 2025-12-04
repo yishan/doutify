@@ -53,7 +53,7 @@ function SearchContent() {
 
     try {
       const offset = (page - 1) * ITEMS_PER_PAGE;
-      const res = await fetch(`/api/spotify/search?q=${encodeURIComponent(searchQuery)}&type=album,artist`);
+      const res = await fetch(`/api/spotify/search?q=${encodeURIComponent(searchQuery)}&type=album,artist&limit=${ITEMS_PER_PAGE}&offset=${offset}`);
       const data = await res.json();
 
       if (data.error) {

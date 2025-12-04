@@ -3,7 +3,7 @@ import { getAccessToken } from '@/lib/spotify';
 
 export async function GET() {
     try {
-        return NextResponse.json({ error: 'Rate limit exceeded' }, { status: 429 });
+
         const token = await getAccessToken();
 
         const response = await fetch('https://api.spotify.com/v1/browse/new-releases', {
