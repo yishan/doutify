@@ -1,6 +1,7 @@
 # Doutify - 音乐专辑探索平台
 
-Doutify 是一个基于 **Next.js 16** 和 **React 19** 构建的现代音乐专辑信息探索应用。通过集成 **Spotify Web API**，为用户提供流畅的音乐发现体验。
+Doutify 主要用于为豆瓣添加音乐专辑信息时方便查询专辑信息。
+所有数据来源自 Spotify。
 
 ## ✨ 主要功能
 
@@ -12,6 +13,6 @@ Doutify 是一个基于 **Next.js 16** 和 **React 19** 构建的现代音乐专
 ## 🛠 技术栈
 
 - **框架**: [Next.js 16](https://nextjs.org/) (App Router)
-- **UI 库**: [React 19](https://react.dev/)
+- **UI库**: [React 19](https://react.dev/)
 - **样式**: [Tailwind CSS 4](https://tailwindcss.com/)
 - **数据源**: [Spotify Web API](https://developer.spotify.com/documentation/web-api)
