@@ -6,16 +6,50 @@ import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import Footer from '../../components/Footer';
 
+const copyToClipboard = async (text: string): Promise<boolean> => {
+    if (typeof navigator !== 'undefined' && navigator.clipboard && navigator.clipboard.writeText) {
+        try {
+            await navigator.clipboard.writeText(text);
+            return true;
+        } catch (err) {
+            console.warn('Clipboard API failed, trying fallback...', err);
+        }
+    }
+
+    try {
+        const textArea = document.createElement("textarea");
+        textArea.value = text;
+
+        // Ensure it's not visible but part of the DOM to avoid scrolling
+        textArea.style.position = "fixed";
+        textArea.style.left = "-9999px";
+        textArea.style.top = "0";
+
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+
+        const successful = document.execCommand('copy');
+        document.body.removeChild(textArea);
+        return successful;
+    } catch (err) {
+        console.error('Fallback copy failed', err);
+        return false;
+    }
+};
+
 const CopyButton = ({ text, className = "" }: { text: string, className?: string }) => {
     const [copied, setCopied] = useState(false);
 
-    const handleCopy = (e: React.MouseEvent) => {
+    const handleCopy = async (e: React.MouseEvent) => {
         e.preventDefault();
         e.stopPropagation();
-        navigator.clipboard.writeText(text).then(() => {
+
+        const success = await copyToClipboard(text);
+        if (success) {
             setCopied(true);
             setTimeout(() => setCopied(false), 1000);
-        });
+        }
     };
 
     return (
@@ -53,17 +87,18 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
 
     const [copied, setCopied] = useState(false);
 
-    const handleCopyTrackList = () => {
+    const handleCopyTrackList = async () => {
         if (!album || !album.tracks || !album.tracks.items) return;
 
         const trackListText = album.tracks.items
             .map((track: any, index: number) => `${index + 1}. ${track.name}`)
             .join('\n');
 
-        navigator.clipboard.writeText(trackListText).then(() => {
+        const success = await copyToClipboard(trackListText);
+        if (success) {
             setCopied(true);
             setTimeout(() => setCopied(false), 2000);
-        });
+        }
     };
 
     useEffect(() => {
@@ -217,6 +252,31 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
                     </div>
                 </div>
 
+                {album.external_ids && Object.keys(album.external_ids).length > 0 && (
+                    <div className="bg-gray-800/30 rounded-xl p-6 backdrop-blur-sm mb-8">
+                        <h3 className="font-semibold text-gray-500 mb-4 uppercase tracking-wider text-xs">External IDs</h3>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            {Object.entries(album.external_ids).map(([key, value]) => (
+                                <div key={key}>
+                                    <span className="font-mono text-gray-500 uppercase block text-xs mb-1">{key}</span>
+                                    <div className="flex items-center gap-2">
+                                        <span className="font-mono text-gray-300">{value as string}</span>
+                                        <CopyButton text={value as string} />
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                <div className="bg-gray-800/30 rounded-xl p-6 backdrop-blur-sm mb-8">
+                    <h3 className="font-semibold text-gray-500 mb-4 uppercase tracking-wider text-xs">Link</h3>
+                    <div className="flex items-center gap-2">
+                        <span className="font-mono text-gray-300 break-all">{album.external_urls.spotify}</span>
+                        <CopyButton text={album.external_urls.spotify} />
+                    </div>
+                </div>
+
                 <div className="bg-gray-800/50 rounded-xl p-6 backdrop-blur-sm mb-8">
                     <div className="flex justify-between items-center mb-6">
                         <div className="flex items-center gap-4">
@@ -255,31 +315,6 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
                                 </div>
                             </div>
                         ))}
-                    </div>
-                </div>
-
-                {album.external_ids && Object.keys(album.external_ids).length > 0 && (
-                    <div className="bg-gray-800/30 rounded-xl p-6 backdrop-blur-sm mb-8">
-                        <h3 className="font-semibold text-gray-500 mb-4 uppercase tracking-wider text-xs">External IDs</h3>
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                            {Object.entries(album.external_ids).map(([key, value]) => (
-                                <div key={key}>
-                                    <span className="font-mono text-gray-500 uppercase block text-xs mb-1">{key}</span>
-                                    <div className="flex items-center gap-2">
-                                        <span className="font-mono text-gray-300">{value as string}</span>
-                                        <CopyButton text={value as string} />
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                )}
-
-                <div className="bg-gray-800/30 rounded-xl p-6 backdrop-blur-sm mb-8">
-                    <h3 className="font-semibold text-gray-500 mb-4 uppercase tracking-wider text-xs">Link</h3>
-                    <div className="flex items-center gap-2">
-                        <span className="font-mono text-gray-300 break-all">{album.external_urls.spotify}</span>
-                        <CopyButton text={album.external_urls.spotify} />
                     </div>
                 </div>
 
