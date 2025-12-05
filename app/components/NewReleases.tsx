@@ -30,7 +30,7 @@ export default function NewReleases() {
 
     if (loading) {
         return (
-            <div className="max-w-3xl mx-auto mb-12">
+            <div className="max-w-3xl mx-auto mb-0">
                 <h2 className="text-2xl font-bold mb-4 mt-12 text-white">Discovery</h2>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     {[...Array(8)].map((_, i) => (
@@ -44,7 +44,7 @@ export default function NewReleases() {
     if (albums.length === 0) return null;
 
     return (
-        <div className="max-w-3xl mx-auto mb-12">
+        <div className="max-w-3xl mx-auto mb-0">
             <h2 className="text-2xl font-bold mb-4 mt-12 text-white">Discovery</h2>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 {albums.slice(0, 8).map((album) => (
