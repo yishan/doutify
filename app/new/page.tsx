@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import AlbumCard from '@/components/AlbumCard';
 
+import Footer from '../components/Footer';
+
 export default function NewReleases() {
     const [albums, setAlbums] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
@@ -47,9 +49,7 @@ export default function NewReleases() {
                     </div>
                 )}
             </div>
-            <footer className="text-center text-gray-500 py-8 border-t border-gray-800 mt-auto">
-                <p>Made by Yishan with Gemini</p>
-            </footer>
+            <Footer />
         </div>
     );
 }

@@ -186,9 +186,11 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
                                 <span>{album.label}</span>
                                 <CopyButton text={album.label} />
                             </div>
-                            <p>
-                                <span className="font-semibold text-gray-500">Release Date:</span> {album.release_date}
-                            </p>
+                            <div className="flex items-center justify-center md:justify-start gap-2">
+                                <span className="font-semibold text-gray-500">Release Date:</span>
+                                <span>{album.release_date}</span>
+                                <CopyButton text={album.release_date} />
+                            </div>
                             <p>
                                 <span className="font-semibold text-gray-500">Popularity:</span> {album.popularity}/100
                             </p>
