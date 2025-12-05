@@ -129,6 +129,18 @@ function SearchContent() {
   const currentPage = parseInt(searchParams.get('page') || '1');
   const currentQ = searchParams.get('q') || '';
 
+  const [placeholder, setPlaceholder] = useState("Search for albums or artists...");
+
+  useEffect(() => {
+    const placeholders = [
+      "Search for album you want to purchase on vinyl",
+      "Find album you have listened to more than ten times",
+      "Type the album containing songs you always request at karaoke",
+      "Get albums info unlisted on Douban"
+    ];
+    setPlaceholder(placeholders[Math.floor(Math.random() * placeholders.length)]);
+  }, []);
+
   return (
     <div className="max-w-6xl mx-auto w-full flex-1">
       <div className="flex justify-center mb-8">
@@ -142,7 +154,7 @@ function SearchContent() {
           type="text"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search for albums or artists..."
+          placeholder={placeholder}
           className="flex-1 p-4 rounded-lg bg-gray-800 border border-gray-700 focus:outline-none focus:border-green-500 text-lg"
         />
         <button
@@ -156,28 +168,30 @@ function SearchContent() {
 
       {!hasSearched && <NewReleases />}
 
-      <div className="flex justify-between items-center mb-8 h-10 max-w-3xl mx-auto w-full">
-        {totalResults > 0 && (
-          <div className="text-gray-400 text-sm">
-            Total Results: {totalResults.toLocaleString()}
-          </div>
-        )}
+      {(totalResults > 0 || albums.length > 0) && (
+        <div className="flex justify-between items-center mb-8 h-10 max-w-3xl mx-auto w-full">
+          {totalResults > 0 && (
+            <div className="text-gray-400 text-sm">
+              Total Results: {totalResults.toLocaleString()}
+            </div>
+          )}
 
-        {albums.length > 0 && (
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-gray-400">Sort by:</span>
-            <select
-              value={sortOrder || ''}
-              onChange={handleSortChange}
-              className="bg-gray-800 text-white text-sm border border-gray-700 rounded-lg px-3 py-2 focus:outline-none focus:border-green-500"
-            >
-              <option value="">Relevance</option>
-              <option value="desc">Newest First</option>
-              <option value="asc">Oldest First</option>
-            </select>
-          </div>
-        )}
-      </div>
+          {albums.length > 0 && (
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-gray-400">Sort by:</span>
+              <select
+                value={sortOrder || ''}
+                onChange={handleSortChange}
+                className="bg-gray-800 text-white text-sm border border-gray-700 rounded-lg px-3 py-2 focus:outline-none focus:border-green-500"
+              >
+                <option value="">Relevance</option>
+                <option value="desc">Newest First</option>
+                <option value="asc">Oldest First</option>
+              </select>
+            </div>
+          )}
+        </div>
+      )}
 
       {hasSearched && !loading && albums.length === 0 && (
         <div className="p-8 text-center text-gray-400 text-xl max-w-3xl mx-auto w-full">
