@@ -208,7 +208,17 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
                         </div>
                         <div className="flex items-center justify-center md:justify-start gap-2 mb-4">
                             <p className="text-xl md:text-2xl text-gray-300">
-                                {album.artists.map((a: any) => a.name).join(', ')}
+                                {album.artists.map((a: any, index: number) => (
+                                    <span key={a.id}>
+                                        <Link
+                                            href={`/?q=${encodeURIComponent(a.name)}`}
+                                            className="hover:text-white hover:underline transition-colors"
+                                        >
+                                            {a.name}
+                                        </Link>
+                                        {index < album.artists.length - 1 && ', '}
+                                    </span>
+                                ))}
                             </p>
                             <CopyButton text={album.artists.map((a: any) => a.name).join(', ')} />
                         </div>
