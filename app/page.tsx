@@ -5,6 +5,7 @@ import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import NewReleases from './components/NewReleases';
 import Footer from './components/Footer';
+import AlbumCard from '@/components/AlbumCard';
 
 function SearchContent() {
   const searchParams = useSearchParams();
@@ -129,60 +130,51 @@ function SearchContent() {
   const currentPage = parseInt(searchParams.get('page') || '1');
   const currentQ = searchParams.get('q') || '';
 
-  const [placeholder, setPlaceholder] = useState("Search for albums or artists...");
-
-  useEffect(() => {
-    const placeholders = [
-      "Search for album you want to purchase on vinyl",
-      "Find album you have listened to more than ten times",
-      "Type the album containing songs you always request at karaoke",
-      "Get albums info unlisted on Douban"
-    ];
-    setPlaceholder(placeholders[Math.floor(Math.random() * placeholders.length)]);
-  }, []);
-
   return (
     <div className="max-w-6xl mx-auto w-full flex-1">
       <div className="flex justify-center mb-8">
-        <Link href="/" className="p-4 rounded-lg transition-colors">
-          <h1 className="text-4xl font-bold text-green-500">Doutify</h1>
+        <Link href="/" className="p-4 rounded-lg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white transition-colors duration-150">
+          <h1 className="text-4xl font-bold text-green-500 text-balance">Doutify</h1>
         </Link>
       </div>
 
-      <form onSubmit={handleSearch} className="flex gap-4 mb-4 max-w-3xl mx-auto">
+      <form onSubmit={handleSearch} className="flex flex-col sm:flex-row gap-4 mb-4 max-w-3xl mx-auto">
+        <label htmlFor="album-search" className="sr-only">Search for albums or artists</label>
         <input
+          id="album-search"
           type="text"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder={placeholder}
-          className="flex-1 p-4 rounded-lg bg-gray-800 border border-gray-700 focus:outline-none focus:border-green-500 text-lg"
+          placeholder="Search for albums or artists…"
+          className="flex-1 p-4 rounded-lg bg-gray-800 border border-gray-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white focus:border-green-500 text-base md:text-lg"
         />
         <button
           type="submit"
           disabled={loading}
-          className="px-8 py-4 bg-green-500 hover:bg-green-600 rounded-lg font-bold transition-colors disabled:opacity-50"
+          className="min-h-[44px] px-8 py-4 bg-green-500 hover:bg-green-600 text-black rounded-lg font-bold transition-colors transition-transform duration-150 active:scale-[0.96] disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
         >
-          {loading ? '...' : 'Search'}
+          {loading ? 'Searching…' : 'Search'}
         </button>
       </form>
 
       {!hasSearched && <NewReleases />}
 
       {(totalResults > 0 || albums.length > 0) && (
-        <div className="flex justify-between items-center mb-8 h-10 max-w-3xl mx-auto w-full">
+        <div className="flex flex-wrap justify-between items-center gap-3 mb-8 min-h-10 max-w-3xl mx-auto w-full">
           {totalResults > 0 && (
-            <div className="text-gray-400 text-sm">
+            <div className="text-gray-300 text-sm tabular-nums">
               Total Results: {totalResults.toLocaleString()}
             </div>
           )}
 
           {albums.length > 0 && (
             <div className="flex items-center gap-2">
-              <span className="text-sm text-gray-400">Sort by:</span>
+              <label htmlFor="sort-order" className="text-sm text-gray-300">Sort by:</label>
               <select
+                id="sort-order"
                 value={sortOrder || ''}
                 onChange={handleSortChange}
-                className="bg-gray-800 text-white text-sm border border-gray-700 rounded-lg px-3 py-2 focus:outline-none focus:border-green-500"
+                className="min-h-[44px] md:min-h-0 bg-gray-800 text-white text-base md:text-sm border border-gray-700 rounded-lg px-3 py-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white focus:border-green-500"
               >
                 <option value="">Relevance</option>
                 <option value="desc">Newest First</option>
@@ -194,67 +186,37 @@ function SearchContent() {
       )}
 
       {hasSearched && !loading && albums.length === 0 && (
-        <div className="p-8 text-center text-gray-400 text-xl max-w-3xl mx-auto w-full">
-          No result
+        <div className="p-8 text-center text-gray-300 text-xl max-w-3xl mx-auto w-full">
+          No matching albums found. Try another album title or artist name.
         </div>
       )}
 
       {albums.length > 0 && (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 mb-12 max-w-3xl mx-auto w-full">
           {albums.map((album) => (
-            <div key={album.id} className="group relative bg-gray-800 rounded-lg overflow-hidden hover:bg-gray-750 transition-colors h-full flex flex-col">
-              <Link
-                href={`/album/${album.id}?source_q=${encodeURIComponent(currentQ)}&source_page=${currentPage}`}
-                className="absolute inset-0 z-0"
-              >
-                <span className="sr-only">View details for {album.name}</span>
-              </Link>
-              <div className="relative aspect-square pointer-events-none">
-                {album.images && album.images.length > 0 ? (
-                  <img
-                    src={album.images[0].url}
-                    alt={`Cover art for ${album.name}`}
-                    className="object-cover w-full h-full transition-transform duration-300 group-hover:scale-105"
-                  />
-                ) : (
-                  <div className="w-full h-full bg-gray-700 flex items-center justify-center text-gray-500">
-                    No Cover
-                  </div>
-                )}
-              </div>
-              <div className="p-4 flex-1 flex flex-col pointer-events-none">
-                <h2 className="font-bold text-lg truncate" title={album.name}>{album.name}</h2>
-                <p className="text-gray-400 truncate">{album.artists.map((a: any) => a.name).join(', ')}</p>
-                {album.genres && album.genres.length > 0 && (
-                  <p className="text-xs text-gray-500 mt-1 truncate">
-                    {album.genres.join(', ')}
-                  </p>
-                )}
-                <p className="text-sm text-gray-500 mt-2">
-                  {album.album_type.charAt(0).toUpperCase() + album.album_type.slice(1)} • {album.release_date.split('-')[0]} • {album.total_tracks} {album.total_tracks === 1 ? 'song' : 'songs'}
-                </p>
-              </div>
-            </div>
+            <AlbumCard key={album.id} album={album} currentQ={currentQ} currentPage={currentPage} />
           ))}
         </div>
       )}
 
       {totalResults > 0 && (
-        <div className="flex justify-center gap-4 mb-12">
+        <div className="flex justify-center items-center gap-4 mb-12">
           <button
+            type="button"
             onClick={() => handlePageChange(currentPage - 1)}
             disabled={currentPage === 1 || loading}
-            className="px-6 py-3 bg-gray-800 hover:bg-gray-700 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="min-h-[44px] px-6 py-3 bg-gray-800 hover:bg-gray-700 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors transition-transform duration-150 active:scale-[0.96] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
           >
             Previous
           </button>
-          <span className="flex items-center px-4 font-mono text-gray-400">
+          <span className="flex items-center px-4 font-mono text-gray-300 tabular-nums">
             Page {currentPage}
           </span>
           <button
+            type="button"
             onClick={() => handlePageChange(currentPage + 1)}
             disabled={(currentPage * ITEMS_PER_PAGE) >= totalResults || loading}
-            className="px-6 py-3 bg-gray-800 hover:bg-gray-700 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="min-h-[44px] px-6 py-3 bg-gray-800 hover:bg-gray-700 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors transition-transform duration-150 active:scale-[0.96] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
           >
             Next
           </button>

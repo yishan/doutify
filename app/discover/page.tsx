@@ -49,11 +49,15 @@ export default async function DiscoverPage() {
             playlist = data;
             tracks = data.tracks.items;
 
-            // Save to cache
-            await fs.writeFile(CACHE_FILE, JSON.stringify({
-                timestamp: Date.now(),
-                data: data
-            }, null, 2));
+            // Save to cache (best-effort in case filesystem is read-only)
+            try {
+                await fs.writeFile(CACHE_FILE, JSON.stringify({
+                    timestamp: Date.now(),
+                    data: data
+                }, null, 2));
+            } catch (writeErr) {
+                console.warn('Could not persist playlist cache:', writeErr);
+            }
         }
     } catch (err: any) {
         console.error('Discover Page Error:', err);

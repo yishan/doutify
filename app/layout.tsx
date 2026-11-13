@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Analytics } from '@vercel/analytics/next';
@@ -18,6 +18,15 @@ export const metadata: Metadata = {
   title: "Doutify",
   description: "Search for your favorite albums and artists on Doutify. Explore album details, tracks, and more.",
   keywords: "spotify, music, album, search, artist, tracks, doutify, lyrics, discography",
+  openGraph: {
+    title: "Doutify",
+    description: "Search for your favorite albums and artists on Doutify. Explore album details, tracks, and more.",
+    type: "website",
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#111827",
 };
 
 export default function RootLayout({
