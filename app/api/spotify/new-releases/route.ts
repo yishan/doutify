@@ -1,79 +1,173 @@
 import { NextResponse } from 'next/server';
-import { getAccessToken } from '@/lib/spotify';
-import fs from 'fs';
+import fs from 'fs/promises';
 import path from 'path';
+import {
+    extractPlaylistTracks,
+    getErrorResponse,
+    SpotifyAlbumSummary,
+    spotifyFetch,
+    SpotifyPlaylistResponse,
+} from '@/lib/spotify';
+
+const CACHE_PATH = path.join(process.cwd(), 'app/discover/playlist_cache.json');
+const PLAYLIST_ID = '5iwkYfnHAGMEFLiHFFGnP4';
+const DAILY_REVALIDATE_SECONDS = 86400; // 24 hours
+const TAG_NEW_OFFSETS = [0, 10, 20, 30];
+const MAX_RETURNED_ALBUMS = 16;
+
+interface SearchAlbumsResponse {
+    albums?: {
+        items?: Array<SpotifyAlbumSummary | null>;
+    };
+}
+
+function toTimestamp(dateStr?: string): number {
+    if (!dateStr) return 0;
+    const ts = new Date(dateStr).getTime();
+    return Number.isFinite(ts) ? ts : 0;
+}
+
+function normalizeAlbumKey(album: SpotifyAlbumSummary): string {
+    const title = (album.name || '').trim().toLowerCase();
+    const artist = (album.artists?.[0]?.name || '').trim().toLowerCase();
+    return `${title}::${artist}`;
+}
+
+function mergeUniqueAlbums(groups: SpotifyAlbumSummary[][], limit: number): SpotifyAlbumSummary[] {
+    const seenIds = new Set<string>();
+    const seenKeys = new Set<string>();
+    const result: SpotifyAlbumSummary[] = [];
+
+    for (const group of groups) {
+        const sorted = [...group].sort(
+            (a, b) => toTimestamp(b.release_date) - toTimestamp(a.release_date)
+        );
+        for (const album of sorted) {
+            if (!album?.id || !album.name) continue;
+            const key = normalizeAlbumKey(album);
+            if (seenIds.has(album.id) || seenKeys.has(key)) continue;
+            seenIds.add(album.id);
+            seenKeys.add(key);
+            result.push(album);
+            if (result.length >= limit) return result;
+        }
+    }
+
+    return result;
+}
+
+async function readCachedAlbums(): Promise<SpotifyAlbumSummary[]> {
+    try {
+        const fileContent = await fs.readFile(CACHE_PATH, 'utf-8');
+        const cacheData = JSON.parse(fileContent) as { data?: SpotifyPlaylistResponse };
+        const tracks = extractPlaylistTracks(cacheData?.data);
+        return tracks
+            .map((track) => track.album)
+            .filter((album): album is SpotifyAlbumSummary => Boolean(album?.id));
+    } catch (readError) {
+        console.error('Error reading playlist cache:', readError);
+        return [];
+    }
+}
 
 export async function GET() {
-    try {
-        const token = await getAccessToken();
-        let albumIds: string[] = [];
+    const searchPromises = TAG_NEW_OFFSETS.map((offset) =>
+        spotifyFetch<SearchAlbumsResponse>(
+            `/search?q=${encodeURIComponent('tag:new')}&type=album&limit=10&offset=${offset}`,
+            { next: { revalidate: DAILY_REVALIDATE_SECONDS } }
+        )
+    );
 
-        // 1. Try to read from playlist_cache.json
-        try {
-            const cachePath = path.join(process.cwd(), 'app/discover/playlist_cache.json');
-            if (fs.existsSync(cachePath)) {
-                const fileContent = fs.readFileSync(cachePath, 'utf-8');
-                const cacheData = JSON.parse(fileContent);
+    const playlistPromise = spotifyFetch<SpotifyPlaylistResponse>(
+        `/playlists/${PLAYLIST_ID}`,
+        { next: { revalidate: DAILY_REVALIDATE_SECONDS } }
+    );
 
-                if (cacheData.data && cacheData.data.tracks && cacheData.data.tracks.items) {
-                    // Extract unique album IDs
-                    const allAlbumIds = new Set<string>();
-                    cacheData.data.tracks.items.forEach((item: any) => {
-                        if (item.track && item.track.album && item.track.album.id) {
-                            allAlbumIds.add(item.track.album.id);
-                        }
-                    });
+    const [searchResults, playlistResult] = await Promise.all([
+        Promise.allSettled(searchPromises),
+        Promise.allSettled([playlistPromise]),
+    ]);
 
-                    // Convert to array
-                    const uniqueIds = Array.from(allAlbumIds);
-
-                    // Randomly select up to 6 IDs
-                    const shuffled = uniqueIds.sort(() => 0.5 - Math.random());
-                    albumIds = shuffled.slice(0, 8);
-                }
+    const tagNewAlbums: SpotifyAlbumSummary[] = [];
+    for (const res of searchResults) {
+        if (res.status === 'fulfilled' && Array.isArray(res.value?.albums?.items)) {
+            for (const item of res.value.albums.items) {
+                if (item?.id) tagNewAlbums.push(item);
             }
-        } catch (readError) {
-            console.error('Error reading playlist cache:', readError);
-            // Fallback to empty array, will trigger default behavior below if empty
         }
-
-        // 2. Fetch album details if we have IDs
-        if (albumIds.length > 0) {
-            const idsParam = albumIds.join(',');
-            const response = await fetch(`https://api.spotify.com/v1/albums?ids=${idsParam}`, {
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                },
-            });
-
-            if (!response.ok) {
-                console.error('Spotify API Error Response (Albums):', await response.text());
-                throw new Error('Failed to fetch albums from Spotify');
-            }
-
-            const data = await response.json();
-            // Wrap in the structure expected by the frontend (similar to new-releases response)
-            return NextResponse.json({ albums: { items: data.albums } });
-        }
-
-        // 3. Fallback: Default new-releases behavior if no IDs found or cache missing
-        console.log('Fallback to standard new-releases');
-        const response = await fetch('https://api.spotify.com/v1/browse/new-releases', {
-            headers: {
-                Authorization: `Bearer ${token}`,
-            },
-        });
-
-        if (!response.ok) {
-            console.error('Spotify API Error Response (New Releases):', await response.text());
-            throw new Error('Failed to fetch data from Spotify');
-        }
-
-        const data = await response.json();
-        return NextResponse.json(data);
-
-    } catch (error: any) {
-        console.error('Spotify API Error:', error);
-        return NextResponse.json({ error: error.message || 'Internal Server Error' }, { status: 500 });
     }
+
+    const livePlaylistAlbums: SpotifyAlbumSummary[] = [];
+    const plOutcome = playlistResult[0];
+    if (plOutcome?.status === 'fulfilled') {
+        for (const track of extractPlaylistTracks(plOutcome.value)) {
+            if (track.album?.id) {
+                livePlaylistAlbums.push(track.album);
+            }
+        }
+    } else if (plOutcome?.status === 'rejected') {
+        console.warn('Live playlist fetch failed:', plOutcome.reason);
+    }
+
+    // Tier 1: Full-length albums from tag:new (released in the past ~2 weeks)
+    const fullNewAlbums = tagNewAlbums.filter(
+        (album) => album.album_type === 'album' && (album.total_tracks ?? 0) >= 4
+    );
+    // Tier 2: Full-length albums from live curated playlist
+    const fullPlaylistAlbums = livePlaylistAlbums.filter(
+        (album) => album.album_type === 'album'
+    );
+    // Tier 3: Recent multi-track EPs/releases from tag:new
+    const multiTrackNewReleases = tagNewAlbums.filter(
+        (album) => (album.total_tracks ?? 0) >= 3
+    );
+    // Tier 4: Remaining recent releases from live playlist & tag:new
+    const combined = mergeUniqueAlbums(
+        [
+            fullNewAlbums,
+            fullPlaylistAlbums,
+            multiTrackNewReleases,
+            livePlaylistAlbums,
+            tagNewAlbums,
+        ],
+        MAX_RETURNED_ALBUMS
+    );
+
+    if (combined.length > 0) {
+        return NextResponse.json(
+            { albums: { items: combined } },
+            {
+                headers: {
+                    'Cache-Control': `public, s-maxage=${DAILY_REVALIDATE_SECONDS}, stale-while-revalidate=3600`,
+                },
+            }
+        );
+    }
+
+    // Fallback 1: Spotify browse/new-releases
+    try {
+        const data = await spotifyFetch<{ albums?: { items?: Array<SpotifyAlbumSummary | null> } }>(
+            '/browse/new-releases?limit=10',
+            { next: { revalidate: DAILY_REVALIDATE_SECONDS } }
+        );
+        const items = Array.isArray(data?.albums?.items)
+            ? data.albums.items.filter((a): a is SpotifyAlbumSummary => Boolean(a?.id))
+            : [];
+        if (items.length > 0) {
+            return NextResponse.json({ albums: { items } });
+        }
+    } catch (browseError) {
+        console.warn('Fallback /browse/new-releases failed:', browseError);
+    }
+
+    // Fallback 2: Local playlist cache
+    const cachedAlbums = await readCachedAlbums();
+    if (cachedAlbums.length > 0) {
+        return NextResponse.json({
+            albums: { items: mergeUniqueAlbums([cachedAlbums], MAX_RETURNED_ALBUMS) },
+        });
+    }
+
+    const { message, status } = getErrorResponse(new Error('No new releases available'));
+    return NextResponse.json({ error: message }, { status });
 }

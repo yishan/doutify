@@ -1,40 +1,51 @@
 import { NextResponse } from 'next/server';
+import { getErrorResponse, SpotifyAlbumSummary, spotifyFetch } from '@/lib/spotify';
 
-import { getAccessToken } from '@/lib/spotify';
+const MAX_SEARCH_LIMIT = 10;
+
+interface SearchResponse {
+    albums?: {
+        items?: Array<SpotifyAlbumSummary | null>;
+        total?: number;
+    };
+}
 
 export async function GET(request: Request) {
-  const { searchParams } = new URL(request.url);
-  const query = searchParams.get('q');
-  const type = searchParams.get('type') || 'album,artist';
-  const limit = searchParams.get('limit') || '20';
-  const offset = searchParams.get('offset') || '0';
+    const { searchParams } = new URL(request.url);
+    const query = searchParams.get('q')?.trim();
+    const type = searchParams.get('type') || 'album';
+    const rawLimit = Number.parseInt(searchParams.get('limit') || '10', 10);
+    const rawOffset = Number.parseInt(searchParams.get('offset') || '0', 10);
 
-
-  if (!query) {
-    return NextResponse.json({ error: 'Missing query parameter' }, { status: 400 });
-  }
-
-
-
-  try {
-    const token = await getAccessToken();
-
-    // Pass the query directly to Spotify to search across all fields (album, artist, etc.)
-    // We still restrict type to 'album' as we are searching for albums
-    const response = await fetch(`https://api.spotify.com/v1/search?q=${encodeURIComponent(query)}&type=${type}&limit=${limit}&offset=${offset}`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-
-    if (!response.ok) {
-      throw new Error('Failed to fetch data from Spotify');
+    if (!query) {
+        return NextResponse.json({ error: 'Missing query parameter' }, { status: 400 });
     }
 
-    const data = await response.json();
-    return NextResponse.json(data);
-  } catch (error: any) {
-    console.error('Spotify API Error:', error);
-    return NextResponse.json({ error: error.message || 'Internal Server Error' }, { status: 500 });
-  }
+    const limit = Number.isFinite(rawLimit)
+        ? Math.min(Math.max(rawLimit, 1), MAX_SEARCH_LIMIT)
+        : MAX_SEARCH_LIMIT;
+    const offset = Number.isFinite(rawOffset) ? Math.max(rawOffset, 0) : 0;
+
+    try {
+        const params = new URLSearchParams({
+            q: query,
+            type,
+            limit: String(limit),
+            offset: String(offset),
+        });
+
+        const data = await spotifyFetch<SearchResponse>(`/search?${params.toString()}`, {
+            next: { revalidate: 300 },
+        });
+
+        if (data?.albums?.items && Array.isArray(data.albums.items)) {
+            data.albums.items = data.albums.items.filter(Boolean);
+        }
+
+        return NextResponse.json(data);
+    } catch (error) {
+        console.error('Spotify Search API Error:', error);
+        const { message, status } = getErrorResponse(error);
+        return NextResponse.json({ error: message }, { status });
+    }
 }

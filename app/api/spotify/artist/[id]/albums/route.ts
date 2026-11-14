@@ -1,5 +1,15 @@
 import { NextResponse } from 'next/server';
-import { getAccessToken } from '@/lib/spotify';
+import { getErrorResponse, SpotifyAlbumSummary, spotifyFetch } from '@/lib/spotify';
+
+const toTimestamp = (dateStr?: string) => {
+    if (!dateStr) return 0;
+    const ts = new Date(dateStr).getTime();
+    return Number.isFinite(ts) ? ts : 0;
+};
+
+interface ArtistAlbumsResponse {
+    items?: Array<SpotifyAlbumSummary | null>;
+}
 
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
     const { id } = await params;
@@ -9,30 +19,23 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     }
 
     try {
-        const token = await getAccessToken();
-        const response = await fetch(
-            `https://api.spotify.com/v1/artists/${id}/albums?include_groups=album,single&limit=20`,
-            {
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                },
-            }
+        // limit=10 stays within Spotify Development Mode caps while providing enough items for top 6
+        const data = await spotifyFetch<ArtistAlbumsResponse>(
+            `/artists/${encodeURIComponent(id)}/albums?include_groups=album,single&limit=10`,
+            { next: { revalidate: 3600 } }
         );
 
-        if (!response.ok) {
-            throw new Error('Failed to fetch artist albums from Spotify');
-        }
-
-        const data = await response.json();
-
-        // Sort by release date descending and take top 6
-        const sortedAlbums = data.items
-            .sort((a: any, b: any) => new Date(b.release_date).getTime() - new Date(a.release_date).getTime())
+        const items = Array.isArray(data?.items)
+            ? data.items.filter((item): item is SpotifyAlbumSummary => Boolean(item))
+            : [];
+        const sortedAlbums = items
+            .sort((a, b) => toTimestamp(b.release_date) - toTimestamp(a.release_date))
             .slice(0, 6);
 
         return NextResponse.json({ items: sortedAlbums });
-    } catch (error: any) {
-        console.error('Spotify API Error:', error);
-        return NextResponse.json({ error: error.message || 'Internal Server Error' }, { status: 500 });
+    } catch (error) {
+        console.error('Spotify Artist Albums API Error:', error);
+        const { message, status } = getErrorResponse(error);
+        return NextResponse.json({ error: message }, { status });
     }
 }

@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getAccessToken } from '@/lib/spotify';
+import { getErrorResponse, spotifyFetch } from '@/lib/spotify';
 
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
     const { id } = await params;
@@ -9,22 +9,13 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     }
 
     try {
-        const token = await getAccessToken();
-        const response = await fetch(`https://api.spotify.com/v1/playlists/${id}`, {
-            headers: {
-                Authorization: `Bearer ${token}`,
-            },
+        const data = await spotifyFetch(`/playlists/${encodeURIComponent(id)}`, {
+            next: { revalidate: 3600 },
         });
-
-        if (!response.ok) {
-            const errorData = await response.text();
-            throw new Error(`Failed to fetch playlist details from Spotify: ${response.status} ${response.statusText} - ${errorData}`);
-        }
-
-        const data = await response.json();
         return NextResponse.json(data);
-    } catch (error: any) {
-        console.error('Spotify API Error:', error);
-        return NextResponse.json({ error: error.message || 'Internal Server Error' }, { status: 500 });
+    } catch (error) {
+        console.error('Spotify Playlist API Error:', error);
+        const { message, status } = getErrorResponse(error);
+        return NextResponse.json({ error: message }, { status });
     }
 }

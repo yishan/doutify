@@ -34,14 +34,20 @@ const AlbumCard = ({ album, currentQ = '', currentPage = 1 }: AlbumCardProps) =>
             </div>
             <div className="p-4 flex-1 flex flex-col pointer-events-none">
                 <h2 className="font-bold text-lg truncate" title={album.name}>{album.name}</h2>
-                <p className="text-gray-300 truncate">{album.artists.map((a: any) => a.name).join(', ')}</p>
+                <p className="text-gray-300 truncate">{(album.artists ?? []).map((a: any) => a.name).join(', ')}</p>
                 {album.genres && album.genres.length > 0 && (
                     <p className="text-xs text-gray-400 mt-1 truncate">
                         {album.genres.join(', ')}
                     </p>
                 )}
                 <p className="text-sm text-gray-400 mt-2 tabular-nums">
-                    {album.album_type.charAt(0).toUpperCase() + album.album_type.slice(1)} • {album.release_date.split('-')[0]} • {album.total_tracks} {album.total_tracks === 1 ? 'song' : 'songs'}
+                    {[
+                        album.album_type ? album.album_type.charAt(0).toUpperCase() + album.album_type.slice(1) : null,
+                        album.release_date ? album.release_date.split('-')[0] : null,
+                        typeof album.total_tracks === 'number'
+                            ? `${album.total_tracks} ${album.total_tracks === 1 ? 'song' : 'songs'}`
+                            : null,
+                    ].filter(Boolean).join(' • ')}
                 </p>
             </div>
         </div>

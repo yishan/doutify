@@ -10,7 +10,7 @@ Doutify 是一个音乐专辑探索平台，主要用于在为 [豆瓣音乐](ht
 
 ## ✨ 主要功能
 
-- 🔍 **智能搜索** — 支持按专辑和艺术家搜索，分页展示（每页 15 条），可按发行日期排序（最新 / 最旧 / 相关度）。
+- 🔍 **智能搜索** — 支持按专辑和艺术家搜索，分页展示（每页 10 条），可按发行日期排序（最新 / 最旧 / 相关度）。
 - 💿 **专辑详情** — 查看完整的专辑信息：封面、艺术家、唱片公司、发行日期、热度、风格流派、外部 ID（UPC / ISRC 等）以及 Spotify 链接。
 - 📋 **复制与下载** — 一键复制专辑名、艺术家、唱片公司、发行日期、外部 ID、Spotify 链接或完整曲目列表；详情页可直接下载封面图。
 - 🆕 **新碟速递** — 基于精选公开 Spotify 歌单展示最新发行的专辑，本地缓存 5 天；也可在[发现页](./app/discover/page.tsx)浏览完整歌单，或前往专门的[新碟页面](./app/new/page.tsx)。
@@ -85,8 +85,7 @@ album-info/
 │       ├── album/[id]/route.ts
 │       ├── artist/[id]/albums/route.ts
 │       ├── playlist/[id]/route.ts
-│       ├── new-releases/route.ts
-│       └── token/route.ts
+│       └── new-releases/route.ts
 ├── components/
 │   └── AlbumCard.tsx           # 可复用的专辑卡片组件
 ├── lib/
@@ -104,8 +103,7 @@ album-info/
 | `GET /api/spotify/album/[id]` | 专辑详情（曲目、唱片公司、外部 ID 等） |
 | `GET /api/spotify/artist/[id]/albums` | 艺术家的最新专辑（前 6 张） |
 | `GET /api/spotify/playlist/[id]` | Spotify 歌单详情 |
-| `GET /api/spotify/new-releases` | 基于缓存的歌单生成新碟列表（失败时回退到 Spotify 官方新发行接口） |
-| `GET /api/spotify/token` | 获取 Spotify 访问令牌 |
+| `GET /api/spotify/new-releases` | 基于缓存的歌单生成新碟列表（支持回退到官方新发行接口与单张查询） |
 
 ## ☁️ 部署
 

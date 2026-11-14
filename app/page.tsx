@@ -18,11 +18,18 @@ function SearchContent() {
   const [query, setQuery] = useState(initialQuery);
   const [albums, setAlbums] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
   const [hasSearched, setHasSearched] = useState(false);
   const [totalResults, setTotalResults] = useState(0);
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc' | null>(null);
 
-  const ITEMS_PER_PAGE = 15;
+  const ITEMS_PER_PAGE = 10;
+
+  const toTimestamp = (dateStr?: string) => {
+    if (!dateStr) return 0;
+    const ts = new Date(dateStr).getTime();
+    return Number.isFinite(ts) ? ts : 0;
+  };
 
   // Sync query state with URL param if it changes externally (e.g. back button)
   useEffect(() => {
@@ -42,6 +49,7 @@ function SearchContent() {
       // Clear results if no query
       setAlbums([]);
       setTotalResults(0);
+      setError('');
       setHasSearched(false);
     }
   }, [searchParams]);
@@ -50,35 +58,38 @@ function SearchContent() {
     if (!searchQuery) return;
 
     setLoading(true);
+    setError('');
     setHasSearched(true);
 
     try {
       const offset = (page - 1) * ITEMS_PER_PAGE;
-      const res = await fetch(`/api/spotify/search?q=${encodeURIComponent(searchQuery)}&type=album,artist&limit=${ITEMS_PER_PAGE}&offset=${offset}`);
+      const res = await fetch(`/api/spotify/search?q=${encodeURIComponent(searchQuery)}&type=album&limit=${ITEMS_PER_PAGE}&offset=${offset}`);
       const data = await res.json();
 
-      if (data.error) {
+      if (!res.ok || data.error) {
         setAlbums([]);
         setTotalResults(0);
+        setError(data.error || 'Failed to fetch search results.');
       } else {
-        let items = data.albums.items;
+        const items = Array.isArray(data?.albums?.items) ? data.albums.items.filter(Boolean) : [];
 
         // Only sort if a specific order is selected
         if (sortOrder) {
           items.sort((a: any, b: any) => {
-            const dateA = new Date(a.release_date).getTime();
-            const dateB = new Date(b.release_date).getTime();
+            const dateA = toTimestamp(a.release_date);
+            const dateB = toTimestamp(b.release_date);
             return sortOrder === 'asc' ? dateA - dateB : dateB - dateA;
           });
         }
 
         setAlbums(items);
         // Set total results to the actual total from API
-        setTotalResults(data.albums.total);
+        setTotalResults(data?.albums?.total ?? items.length);
       }
     } catch (err) {
       setAlbums([]);
       setTotalResults(0);
+      setError('Failed to connect to search service.');
     } finally {
       setLoading(false);
     }
@@ -111,8 +122,8 @@ function SearchContent() {
         if (q) performSearch(q, page);
       } else {
         const sorted = [...albums].sort((a: any, b: any) => {
-          const dateA = new Date(a.release_date).getTime();
-          const dateB = new Date(b.release_date).getTime();
+          const dateA = toTimestamp(a.release_date);
+          const dateB = toTimestamp(b.release_date);
           return newOrder === 'asc' ? dateA - dateB : dateB - dateA;
         });
         setAlbums(sorted);
@@ -185,7 +196,20 @@ function SearchContent() {
         </div>
       )}
 
-      {hasSearched && !loading && albums.length === 0 && (
+      {hasSearched && !loading && error && (
+        <div className="bg-gray-800 rounded-lg p-6 text-center text-red-400 max-w-3xl mx-auto w-full mb-8">
+          <p className="mb-4">{error}</p>
+          <button
+            type="button"
+            onClick={() => currentQ && performSearch(currentQ, currentPage)}
+            className="min-h-[44px] px-5 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg text-sm font-medium transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+          >
+            Retry
+          </button>
+        </div>
+      )}
+
+      {hasSearched && !loading && !error && albums.length === 0 && (
         <div className="p-8 text-center text-gray-300 text-xl max-w-3xl mx-auto w-full">
           No matching albums found. Try another album title or artist name.
         </div>

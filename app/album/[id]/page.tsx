@@ -140,8 +140,8 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
                 const res = await fetch(`/api/spotify/album/${id}`);
                 const data = await res.json();
 
-                if (data.error) {
-                    setError(data.error);
+                if (!res.ok || data.error) {
+                    setError(data.error || 'Failed to load album details.');
                 } else {
                     setAlbum(data);
                 }
@@ -157,7 +157,10 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
 
     useEffect(() => {
         const fetchDiscovery = async () => {
-            if (!album || !album.artists || album.artists.length === 0) return;
+            if (!album || !album.artists || album.artists.length === 0) {
+                setLoadingDiscovery(false);
+                return;
+            }
 
             setLoadingDiscovery(true);
             try {
@@ -165,8 +168,8 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
                 const res = await fetch(`/api/spotify/artist/${artistId}/albums`);
                 const data = await res.json();
 
-                if (data.items) {
-                    setDiscoveryAlbums(data.items);
+                if (res.ok && Array.isArray(data.items)) {
+                    setDiscoveryAlbums(data.items.filter((item: any) => item && item.id !== id));
                 }
             } catch (err) {
                 console.error('Failed to fetch discovery albums', err);
@@ -178,7 +181,7 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
         if (album) {
             fetchDiscovery();
         }
-    }, [album]);
+    }, [album, id]);
 
     const backLink = sourceQ
         ? `/?q=${sourceQ}&page=${sourcePage || 1}`
@@ -276,37 +279,47 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
                         </div>
                         <div className="flex items-center justify-center md:justify-start gap-2 mb-4">
                             <p className="text-xl md:text-2xl text-gray-300">
-                                {album.artists.map((a: any, index: number) => (
-                                    <span key={a.id}>
+                                {(album.artists ?? []).map((a: any, index: number) => (
+                                    <span key={a.id || index}>
                                         <Link
                                             href={`/?q=${encodeURIComponent(a.name)}`}
                                             className="hover:text-white hover:underline transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white rounded"
                                         >
                                             {a.name}
                                         </Link>
-                                        {index < album.artists.length - 1 && ', '}
+                                        {index < (album.artists ?? []).length - 1 && ', '}
                                     </span>
                                 ))}
                             </p>
-                            <CopyButton text={album.artists.map((a: any) => a.name).join(', ')} label="Copy artists" />
+                            {album.artists?.length > 0 && (
+                                <CopyButton text={album.artists.map((a: any) => a.name).join(', ')} label="Copy artists" />
+                            )}
                         </div>
                         <div className="text-sm text-gray-300 space-y-1">
-                            <p>
-                                <span className="font-semibold text-gray-400">Type:</span> {album.album_type.charAt(0).toUpperCase() + album.album_type.slice(1)}
-                            </p>
-                            <div className="flex items-center justify-center md:justify-start gap-2">
-                                <span className="font-semibold text-gray-400">Label:</span>
-                                <span>{album.label}</span>
-                                <CopyButton text={album.label} label="Copy label" />
-                            </div>
-                            <div className="flex items-center justify-center md:justify-start gap-2">
-                                <span className="font-semibold text-gray-400">Release Date:</span>
-                                <span className="tabular-nums">{album.release_date}</span>
-                                <CopyButton text={album.release_date} label="Copy release date" />
-                            </div>
-                            <p className="tabular-nums">
-                                <span className="font-semibold text-gray-400">Popularity:</span> {album.popularity}/100
-                            </p>
+                            {album.album_type && (
+                                <p>
+                                    <span className="font-semibold text-gray-400">Type:</span> {album.album_type.charAt(0).toUpperCase() + album.album_type.slice(1)}
+                                </p>
+                            )}
+                            {album.label && (
+                                <div className="flex items-center justify-center md:justify-start gap-2">
+                                    <span className="font-semibold text-gray-400">Label:</span>
+                                    <span>{album.label}</span>
+                                    <CopyButton text={album.label} label="Copy label" />
+                                </div>
+                            )}
+                            {album.release_date && (
+                                <div className="flex items-center justify-center md:justify-start gap-2">
+                                    <span className="font-semibold text-gray-400">Release Date:</span>
+                                    <span className="tabular-nums">{album.release_date}</span>
+                                    <CopyButton text={album.release_date} label="Copy release date" />
+                                </div>
+                            )}
+                            {typeof album.popularity === 'number' && (
+                                <p className="tabular-nums">
+                                    <span className="font-semibold text-gray-400">Popularity:</span> {album.popularity}/100
+                                </p>
+                            )}
                             {album.genres && album.genres.length > 0 && (
                                 <p>
                                     <span className="font-semibold text-gray-400">Genres:</span> {album.genres.join(', ')}
@@ -315,17 +328,19 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
                         </div>
 
                         <div className="mt-6 flex flex-wrap gap-3 items-center justify-center md:justify-start">
-                            <a
-                                href={album.external_urls.spotify}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="inline-flex items-center min-h-[44px] px-6 py-3 bg-green-500 hover:bg-green-600 text-black font-bold rounded-full transition-colors transition-transform duration-150 active:scale-[0.96] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
-                            >
-                                <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                                    <path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141 4.32-1.32 9.84-.6 13.561 1.621.42.3.539.84.24 1.2zm.119-3.3c-3.839-2.28-10.26-2.46-13.98-1.32-.6.181-1.2-.179-1.38-.779-.181-.6.179-1.2.779-1.38 4.32-1.32 11.34-1.08 15.72 1.56.6.36.84 1.02.479 1.62-.36.601-1.02.84-1.62.48z" />
-                                </svg>
-                                Open in Spotify
-                            </a>
+                            {album.external_urls?.spotify && (
+                                <a
+                                    href={album.external_urls.spotify}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="inline-flex items-center min-h-[44px] px-6 py-3 bg-green-500 hover:bg-green-600 text-black font-bold rounded-full transition-colors transition-transform duration-150 active:scale-[0.96] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+                                >
+                                    <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                        <path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141 4.32-1.32 9.84-.6 13.561 1.621.42.3.539.84.24 1.2zm.119-3.3c-3.839-2.28-10.26-2.46-13.98-1.32-.6.181-1.2-.179-1.38-.779-.181-.6.179-1.2.779-1.38 4.32-1.32 11.34-1.08 15.72 1.56.6.36.84 1.02.479 1.62-.36.601-1.02.84-1.62.48z" />
+                                    </svg>
+                                    Open in Spotify
+                                </a>
+                            )}
                             {album.images && album.images[0] && (
                                 <button
                                     type="button"
@@ -359,13 +374,15 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
                     </div>
                 )}
 
-                <div className="bg-gray-800/30 rounded-xl p-6 mb-8">
-                    <h3 className="font-semibold text-gray-400 mb-4 uppercase tracking-wider text-xs">Link</h3>
-                    <div className="flex items-center gap-2">
-                        <span className="font-mono text-gray-200 break-all">{album.external_urls.spotify}</span>
-                        <CopyButton text={album.external_urls.spotify} label="Copy Spotify link" />
+                {album.external_urls?.spotify && (
+                    <div className="bg-gray-800/30 rounded-xl p-6 mb-8">
+                        <h3 className="font-semibold text-gray-400 mb-4 uppercase tracking-wider text-xs">Link</h3>
+                        <div className="flex items-center gap-2">
+                            <span className="font-mono text-gray-200 break-all">{album.external_urls.spotify}</span>
+                            <CopyButton text={album.external_urls.spotify} label="Copy Spotify link" />
+                        </div>
                     </div>
-                </div>
+                )}
 
                 <div className="bg-gray-800/50 rounded-xl p-6 mb-8">
                     <div className="flex flex-wrap justify-between items-center gap-3 mb-6">
@@ -383,13 +400,13 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
                             </button>
                         </div>
                         <p className="text-gray-300 text-sm tabular-nums">
-                            {album.total_tracks} songs • {formatTotalDuration(album.tracks.items.reduce((acc: number, track: any) => acc + track.duration_ms, 0))}
+                            {album.total_tracks ?? (album.tracks?.items?.length || 0)} songs • {formatTotalDuration((album.tracks?.items ?? []).reduce((acc: number, track: any) => acc + (track?.duration_ms || 0), 0))}
                         </p>
                     </div>
                     <div className="space-y-2">
-                        {album.tracks.items.map((track: any, index: number) => (
+                        {(album.tracks?.items ?? []).map((track: any, index: number) => (
                             <div
-                                key={track.id}
+                                key={track.id || index}
                                 className="flex items-center p-3 hover:bg-white/5 rounded-lg transition-colors duration-150 group"
                             >
                                 <span className="w-8 text-gray-400 text-right mr-4 tabular-nums">{index + 1}</span>
@@ -398,11 +415,11 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
                                         {track.name}
                                     </div>
                                     <div className="text-sm text-gray-400 truncate">
-                                        {track.artists.map((a: any) => a.name).join(', ')}
+                                        {(track.artists ?? []).map((a: any) => a.name).join(', ')}
                                     </div>
                                 </div>
                                 <div className="text-sm text-gray-400 ml-4 font-mono tabular-nums">
-                                    {formatTrackDuration(track.duration_ms)}
+                                    {formatTrackDuration(track.duration_ms || 0)}
                                 </div>
                             </div>
                         ))}
@@ -444,7 +461,7 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
                                         {item.name}
                                     </h3>
                                     <p className="text-xs text-gray-400 tabular-nums">
-                                        {item.release_date.split('-')[0]}
+                                        {item.release_date ? item.release_date.split('-')[0] : ''}
                                     </p>
                                 </Link>
                             ))}

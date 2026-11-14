@@ -10,7 +10,7 @@ Doutify is a music album exploration platform designed to make it quick and easy
 
 ## ✨ Features
 
-- 🔍 **Smart Search** — Search albums and artists with pagination (15 results per page) and sorting by release date (newest / oldest / relevance).
+- 🔍 **Smart Search** — Search albums and artists with pagination (10 results per page) and sorting by release date (newest / oldest / relevance).
 - 💿 **Album Details** — View complete album info: cover art, artists, record label, release date, popularity, genres, external IDs (UPC / ISRC, etc.), and the Spotify link.
 - 📋 **Copy & Download** — One-click copy for the album name, artists, label, release date, external IDs, Spotify link, or the full track list; download the cover art directly from the detail page.
 - 🆕 **Discover** — See the latest releases pulled from a curated public Spotify playlist, cached locally for 5 days; also browse the full playlist on the [Discover page](./app/discover/page.tsx) or a dedicated [New Releases page](./app/new/page.tsx).
@@ -85,8 +85,7 @@ album-info/
 │       ├── album/[id]/route.ts
 │       ├── artist/[id]/albums/route.ts
 │       ├── playlist/[id]/route.ts
-│       ├── new-releases/route.ts
-│       └── token/route.ts
+│       └── new-releases/route.ts
 ├── components/
 │   └── AlbumCard.tsx           # Reusable album card component
 ├── lib/
@@ -104,8 +103,7 @@ All routes proxy to the [Spotify Web API](https://developer.spotify.com/document
 | `GET /api/spotify/album/[id]` | Album details (tracks, label, external IDs…) |
 | `GET /api/spotify/artist/[id]/albums` | Latest albums by an artist (top 6) |
 | `GET /api/spotify/playlist/[id]` | Spotify playlist details |
-| `GET /api/spotify/new-releases` | New releases derived from the cached playlist (falls back to Spotify's new-releases browse) |
-| `GET /api/spotify/token` | Obtain a Spotify access token |
+| `GET /api/spotify/new-releases` | New releases derived from the cached playlist (with fallback to Spotify's new-releases browse and individual lookups) |
 
 ## ☁️ Deployment
 

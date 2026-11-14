@@ -72,16 +72,18 @@ export default function DiscoverClient({ playlist, tracks, error }: DiscoverClie
                                     {stripHtmlTags(playlist.description)}
                                 </p>
                             )}
-                            <div className="mt-4">
-                                <a
-                                    href={playlist.external_urls.spotify}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="inline-flex items-center min-h-[44px] bg-green-500 hover:bg-green-600 text-black font-bold py-3 px-8 rounded-full transition-colors transition-transform duration-150 active:scale-[0.96] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
-                                >
-                                    Open in Spotify
-                                </a>
-                            </div>
+                            {playlist.external_urls?.spotify && (
+                                <div className="mt-4">
+                                    <a
+                                        href={playlist.external_urls.spotify}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="inline-flex items-center min-h-[44px] bg-green-500 hover:bg-green-600 text-black font-bold py-3 px-8 rounded-full transition-colors transition-transform duration-150 active:scale-[0.96] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+                                    >
+                                        Open in Spotify
+                                    </a>
+                                </div>
+                            )}
                         </div>
                     </div>
                 )}
@@ -98,9 +100,9 @@ export default function DiscoverClient({ playlist, tracks, error }: DiscoverClie
                             </tr>
                         </thead>
                         <tbody>
-                            {tracks.map((item: any, index: number) => {
-                                const track = item.track;
-                                if (!track) return null;
+                            {tracks.map((entry: any, index: number) => {
+                                const track = entry?.item ?? entry?.track ?? entry;
+                                if (!track || !track.name) return null;
                                 return (
                                     <tr key={track.id || index} className="hover:bg-white/5 transition-colors duration-150 group">
                                         <td className="p-4 text-gray-400 tabular-nums">{index + 1}</td>
@@ -108,13 +110,19 @@ export default function DiscoverClient({ playlist, tracks, error }: DiscoverClie
                                             {track.name}
                                         </td>
                                         <td className="p-4 text-gray-300">
-                                            {track.album.name}
+                                            {track.album?.id ? (
+                                                <Link href={`/album/${track.album.id}`} className="hover:text-white hover:underline">
+                                                    {track.album.name}
+                                                </Link>
+                                            ) : (
+                                                track.album?.name || '—'
+                                            )}
                                         </td>
                                         <td className="p-4 text-gray-300">
-                                            {track.artists.map((a: any) => a.name).join(', ')}
+                                            {(track.artists ?? []).map((a: any) => a.name).join(', ')}
                                         </td>
                                         <td className="p-4 text-gray-400 font-mono text-sm text-right tabular-nums">
-                                            {formatDuration(track.duration_ms)}
+                                            {formatDuration(track.duration_ms || 0)}
                                         </td>
                                     </tr>
                                 );

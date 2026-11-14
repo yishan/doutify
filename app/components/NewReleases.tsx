@@ -2,9 +2,10 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import type { SpotifyAlbumSummary } from '@/lib/spotify';
 
 export default function NewReleases() {
-    const [albums, setAlbums] = useState<any[]>([]);
+    const [albums, setAlbums] = useState<SpotifyAlbumSummary[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(false);
 
@@ -72,7 +73,15 @@ export default function NewReleases() {
 
     return (
         <div className="max-w-3xl mx-auto mb-0">
-            <h2 className="text-2xl font-bold mb-4 mt-12 text-white text-balance">Discover</h2>
+            <div className="flex items-baseline justify-between mb-4 mt-12">
+                <h2 className="text-2xl font-bold text-white text-balance">Discover</h2>
+                <Link
+                    href="/new"
+                    className="text-sm text-gray-300 hover:text-green-400 transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white rounded"
+                >
+                    View all →
+                </Link>
+            </div>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 {albums.slice(0, 8).map((album) => (
                     <div key={album.id} className="group relative bg-gray-800 rounded-lg overflow-hidden hover:bg-gray-700/80 focus-within:ring-2 focus-within:ring-white/80 transition-colors duration-150 flex flex-col">
@@ -97,9 +106,12 @@ export default function NewReleases() {
                         </div>
                         <div className="p-3 flex-1 flex flex-col pointer-events-none">
                             <h3 className="font-bold text-md truncate" title={album.name}>{album.name}</h3>
-                            <p className="text-gray-300 text-sm truncate">{album.artists.map((a: any) => a.name).join(', ')}</p>
+                            <p className="text-gray-300 text-sm truncate">{(album.artists ?? []).map((a) => a.name).join(', ')}</p>
                             <p className="text-xs text-gray-400 mt-1 tabular-nums">
-                                {album.album_type.charAt(0).toUpperCase() + album.album_type.slice(1)} • {album.release_date}
+                                {[
+                                    album.album_type ? album.album_type.charAt(0).toUpperCase() + album.album_type.slice(1) : null,
+                                    album.release_date || null,
+                                ].filter(Boolean).join(' • ')}
                             </p>
                         </div>
                     </div>
