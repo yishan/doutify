@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, Suspense } from 'react';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import type { SpotifyAlbumSummary } from '@/lib/spotify';
+import { getRecentAlbums, clearRecentAlbums } from '@/lib/recentAlbums';
 import Header from './components/Header';
 import NewReleases from './components/NewReleases';
 import Footer from './components/Footer';
@@ -10,6 +11,15 @@ import AlbumCard from '@/components/AlbumCard';
 
 const RECENT_STORAGE_KEY = 'doutify_recent_searches';
 const SEED_QUERIES = ['Radiohead', 'Nujabes', 'Frank Ocean', 'Ryuichi Sakamoto'];
+
+function extractSpotifyAlbumId(input: string): string | null {
+  const trimmed = input.trim();
+  const urlMatch = trimmed.match(/open\.spotify\.com\/(?:intl-[a-zA-Z-]+\/)?album\/([a-zA-Z0-9]{22})/);
+  if (urlMatch?.[1]) return urlMatch[1];
+  const uriMatch = trimmed.match(/^spotify:album:([a-zA-Z0-9]{22})$/);
+  if (uriMatch?.[1]) return uriMatch[1];
+  return null;
+}
 
 function SearchContent() {
   const searchParams = useSearchParams();
@@ -27,6 +37,7 @@ function SearchContent() {
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc' | null>(null);
   const [typeFilter, setTypeFilter] = useState<'all' | 'album' | 'single'>('all');
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
+  const [recentAlbums, setRecentAlbums] = useState<SpotifyAlbumSummary[]>([]);
   const prevSearchQRef = useRef(initialQuery);
 
   const ITEMS_PER_PAGE = 10;
@@ -49,6 +60,7 @@ function SearchContent() {
     } catch {
       // Ignore storage errors
     }
+    setRecentAlbums(getRecentAlbums());
   }, []);
 
   useEffect(() => {
@@ -93,7 +105,7 @@ function SearchContent() {
   useEffect(() => {
     const trimmed = query.trim();
     const urlQ = (searchParams.get('q') || '').trim();
-    if (trimmed.length < 2 || trimmed === urlQ) return;
+    if (trimmed.length < 2 || trimmed === urlQ || extractSpotifyAlbumId(trimmed)) return;
 
     const timer = setTimeout(() => {
       router.replace(`${pathname}?q=${encodeURIComponent(trimmed)}&page=1`, { scroll: false });
@@ -171,8 +183,14 @@ function SearchContent() {
     router.push(`${pathname}?${params.toString()}`);
   };
 
+  const detectedAlbumId = extractSpotifyAlbumId(query);
+
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
+    if (detectedAlbumId) {
+      router.push(`/album/${detectedAlbumId}`);
+      return;
+    }
     navigateToSearch(query);
   };
 
@@ -302,6 +320,19 @@ function SearchContent() {
           </div>
         </form>
 
+        {detectedAlbumId && (
+          <div className="max-w-2xl mx-auto mt-3 flex items-center justify-between gap-3 px-4 py-2.5 rounded-xl border border-[#1db954]/30 bg-[#1db954]/10 text-xs text-[#e8e6e3]">
+            <span className="truncate">Spotify album link detected</span>
+            <button
+              type="button"
+              onClick={() => router.push(`/album/${detectedAlbumId}`)}
+              className="shrink-0 font-semibold text-[#1db954] hover:underline focus-visible:outline-2 focus-visible:outline-white rounded"
+            >
+              Open Album →
+            </button>
+          </div>
+        )}
+
         {!hasSearched && (
           <div className="max-w-2xl mx-auto mt-4 flex flex-wrap items-center justify-center gap-2 text-xs">
             <span className="text-[#8e8e8e] mr-1">
@@ -332,6 +363,31 @@ function SearchContent() {
           </div>
         )}
       </div>
+
+      {!hasSearched && recentAlbums.length > 0 && (
+        <section className="max-w-5xl mx-auto w-full pb-8 mb-4 border-b border-white/[0.08]">
+          <div className="flex items-baseline justify-between mb-5">
+            <div>
+              <h2 className="font-serif text-2xl text-[#e8e6e3] tracking-tight">Recently Viewed</h2>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                clearRecentAlbums();
+                setRecentAlbums([]);
+              }}
+              className="text-xs text-[#8e8e8e] hover:text-[#e8e6e3] transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-white rounded"
+            >
+              Clear history
+            </button>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-x-5 gap-y-6">
+            {recentAlbums.map((album) => (
+              <AlbumCard key={album.id} album={album} />
+            ))}
+          </div>
+        </section>
+      )}
 
       {!hasSearched && <NewReleases />}
 

@@ -5,6 +5,7 @@ import { Fragment, useState, useEffect, use } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import type { SpotifyAlbumSummary, SpotifyTrackItem } from '@/lib/spotify';
+import { saveRecentAlbum } from '@/lib/recentAlbums';
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
 import FadeImage from '../../components/FadeImage';
@@ -106,9 +107,13 @@ const QuickCopyChip = ({
 const TrackRow = ({
     track,
     fallbackNumber,
+    isPreviewing = false,
+    onTogglePreview,
 }: {
     track: SpotifyTrackItem;
     fallbackNumber: number;
+    isPreviewing?: boolean;
+    onTogglePreview?: () => void;
 }) => {
     const [copied, setCopied] = useState(false);
 
@@ -124,13 +129,59 @@ const TrackRow = ({
     const displayNumber = track.track_number ?? fallbackNumber;
 
     return (
-        <div className="flex items-center gap-3 sm:gap-4 px-2 py-3.5 hover:bg-white/[0.03] transition-colors duration-150 group">
-            <span className="w-7 text-right text-xs font-mono text-[#8e8e8e] tabular-nums shrink-0">
-                {displayNumber}
-            </span>
+        <div
+            className={`flex items-center gap-3 sm:gap-4 px-2 py-3.5 transition-colors duration-150 group ${
+                isPreviewing ? 'bg-white/[0.05]' : 'hover:bg-white/[0.03]'
+            }`}
+        >
+            {track.id && onTogglePreview ? (
+                <button
+                    type="button"
+                    onClick={onTogglePreview}
+                    aria-label={
+                        isPreviewing
+                            ? `Stop preview for ${track.name || 'track'}`
+                            : `Preview ${track.name || 'track'}`
+                    }
+                    title={isPreviewing ? 'Hide track preview' : 'Preview track'}
+                    className={`w-7 h-7 flex items-center justify-end pr-0.5 text-xs font-mono tabular-nums shrink-0 rounded focus-visible:outline-2 focus-visible:outline-white ${
+                        isPreviewing ? 'text-[#1db954]' : 'text-[#8e8e8e] hover:text-[#1db954]'
+                    }`}
+                >
+                    {isPreviewing ? (
+                        <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" />
+                        </svg>
+                    ) : (
+                        <>
+                            <span className="group-hover:hidden group-focus-within:hidden">
+                                {displayNumber}
+                            </span>
+                            <svg
+                                className="w-3.5 h-3.5 hidden group-hover:inline-block group-focus-within:inline-block"
+                                fill="currentColor"
+                                viewBox="0 0 24 24"
+                                aria-hidden="true"
+                            >
+                                <path d="M8 5v14l11-7z" />
+                            </svg>
+                        </>
+                    )}
+                </button>
+            ) : (
+                <span className="w-7 text-right text-xs font-mono text-[#8e8e8e] tabular-nums shrink-0">
+                    {displayNumber}
+                </span>
+            )}
             <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 min-w-0">
-                    <span className="text-sm font-medium text-[#e8e6e3] group-hover:text-white truncate">
+                    <span
+                        className={`text-sm font-medium truncate ${
+                            isPreviewing
+                                ? 'text-[#1db954]'
+                                : 'text-[#e8e6e3] group-hover:text-white'
+                        }`}
+                    >
                         {track.name}
                     </span>
                     {track.explicit && (
@@ -205,7 +256,11 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
     const [error, setError] = useState('');
     const [discoveryAlbums, setDiscoveryAlbums] = useState<SpotifyAlbumSummary[]>([]);
     const [loadingDiscovery, setLoadingDiscovery] = useState(true);
-    const [showEmbed, setShowEmbed] = useState(false);
+    const [previewTarget, setPreviewTarget] = useState<{
+        type: 'album' | 'track';
+        id: string;
+        name: string;
+    } | null>(null);
 
     const handleDownloadImage = async (imageUrl: string, fileName: string) => {
         try {
@@ -270,6 +325,7 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
         };
 
         if (album) {
+            saveRecentAlbum(album);
             fetchDiscovery();
         }
     }, [album, id]);
@@ -328,6 +384,12 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
     const artistNames = (album.artists ?? []).map((a) => a.name).join(', ');
     const trackListText = trackItems
         .map((track, index) => `${track.track_number ?? index + 1}. ${track.name || ''}`)
+        .join('\n');
+    const timedTrackListText = trackItems
+        .map(
+            (track, index) =>
+                `${track.track_number ?? index + 1}. ${track.name || ''} (${formatTrackDuration(track.duration_ms || 0)})`
+        )
         .join('\n');
     const upc = album.external_ids?.upc || album.external_ids?.ean || '';
     const primaryArtistName = album.artists?.[0]?.name;
@@ -460,10 +522,16 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
 
                             <button
                                 type="button"
-                                onClick={() => setShowEmbed((prev) => !prev)}
+                                onClick={() =>
+                                    setPreviewTarget((prev) =>
+                                        prev?.type === 'album' && prev.id === album.id
+                                            ? null
+                                            : { type: 'album', id: album.id, name: album.name }
+                                    )
+                                }
                                 className="inline-flex items-center min-h-[42px] px-4 py-2.5 rounded-full border border-white/[0.12] bg-white/[0.03] hover:bg-white/[0.08] text-sm text-[#e8e6e3] transition-colors duration-200 focus-visible:outline-2 focus-visible:outline-white"
                             >
-                                {showEmbed ? 'Hide Preview' : 'Preview'}
+                                {previewTarget?.type === 'album' ? 'Hide Preview' : 'Preview Album'}
                             </button>
 
                             {coverUrl && (
@@ -479,16 +547,29 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
                     </div>
                 </div>
 
-                {showEmbed && (
+                {previewTarget && (
                     <div className="mb-10 rounded-2xl overflow-hidden border border-white/[0.08] bg-[#0e0e0e]">
+                        <div className="flex items-center justify-between px-4 py-2 border-b border-white/[0.06] text-xs">
+                            <span className="text-[#a3a3a3] truncate">
+                                Previewing:{' '}
+                                <span className="text-[#e8e6e3] font-medium">{previewTarget.name}</span>
+                            </span>
+                            <button
+                                type="button"
+                                onClick={() => setPreviewTarget(null)}
+                                className="text-[#8e8e8e] hover:text-[#e8e6e3] transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-white rounded px-1.5 py-0.5 shrink-0"
+                            >
+                                Close
+                            </button>
+                        </div>
                         <iframe
-                            title={`Spotify player for ${album.name}`}
-                            src={`https://open.spotify.com/embed/album/${encodeURIComponent(album.id)}?utm_source=generator&theme=0`}
+                            title={`Spotify player for ${previewTarget.name}`}
+                            src={`https://open.spotify.com/embed/${previewTarget.type}/${encodeURIComponent(previewTarget.id)}?utm_source=generator&theme=0`}
                             width="100%"
-                            height="152"
+                            height={previewTarget.type === 'track' ? '80' : '152'}
                             allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
                             loading="lazy"
-                            className="border-0"
+                            className="border-0 block"
                         />
                     </div>
                 )}
@@ -504,6 +585,7 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
                     {album.label && <QuickCopyChip text={album.label} label="Label" />}
                     {upc && <QuickCopyChip text={upc} label="UPC" />}
                     {trackListText && <QuickCopyChip text={trackListText} label="Tracklist" />}
+                    {timedTrackListText && <QuickCopyChip text={timedTrackListText} label="Timed List" />}
                     {album.external_urls?.spotify && (
                         <QuickCopyChip text={album.external_urls.spotify} label="Link" />
                     )}
@@ -532,7 +614,20 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
                                             Disc {discNumber}
                                         </div>
                                     )}
-                                    <TrackRow track={track} fallbackNumber={index + 1} />
+                                    <TrackRow
+                                        track={track}
+                                        fallbackNumber={index + 1}
+                                        isPreviewing={previewTarget?.type === 'track' && previewTarget.id === track.id}
+                                        onTogglePreview={() => {
+                                            const trackId = track.id;
+                                            if (!trackId) return;
+                                            setPreviewTarget((prev) =>
+                                                prev?.type === 'track' && prev.id === trackId
+                                                    ? null
+                                                    : { type: 'track', id: trackId, name: track.name || 'Track' }
+                                            );
+                                        }}
+                                    />
                                 </Fragment>
                             );
                         })}

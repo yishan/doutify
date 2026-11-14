@@ -15,16 +15,33 @@ export default function Header() {
     const router = useRouter();
 
     useEffect(() => {
+        const focusSearchInput = () => {
+            const searchInput = document.getElementById('album-search') as HTMLInputElement | null;
+            if (searchInput) {
+                searchInput.focus();
+                searchInput.select();
+            } else {
+                router.push('/?focus=1');
+            }
+        };
+
         const handleKeyDown = (e: KeyboardEvent) => {
             if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
                 e.preventDefault();
-                const searchInput = document.getElementById('album-search') as HTMLInputElement | null;
-                if (searchInput) {
-                    searchInput.focus();
-                    searchInput.select();
-                } else {
-                    router.push('/?focus=1');
-                }
+                focusSearchInput();
+                return;
+            }
+
+            const target = e.target as HTMLElement | null;
+            const isTypingField =
+                target &&
+                (target.tagName === 'INPUT' ||
+                    target.tagName === 'TEXTAREA' ||
+                    target.tagName === 'SELECT' ||
+                    target.isContentEditable);
+            if (!isTypingField && !e.metaKey && !e.ctrlKey && !e.altKey && e.key === '/') {
+                e.preventDefault();
+                focusSearchInput();
             }
         };
 
