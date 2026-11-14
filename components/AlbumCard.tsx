@@ -1,7 +1,9 @@
 import Link from 'next/link';
+import type { SpotifyAlbumSummary } from '@/lib/spotify';
+import FadeImage from '@/app/components/FadeImage';
 
 interface AlbumCardProps {
-    album: any;
+    album: SpotifyAlbumSummary;
     currentQ?: string;
     currentPage?: number;
 }
@@ -11,46 +13,47 @@ const AlbumCard = ({ album, currentQ = '', currentPage = 1 }: AlbumCardProps) =>
         ? `/album/${album.id}?source_q=${encodeURIComponent(currentQ)}&source_page=${currentPage}`
         : `/album/${album.id}`;
 
+    const year = album.release_date ? album.release_date.split('-')[0] : '';
+    const artists = (album.artists ?? []).map((a) => a.name).join(', ');
+    const isNonAlbum = album.album_type && album.album_type !== 'album';
+
     return (
-        <div className="group relative bg-gray-800 rounded-lg overflow-hidden hover:bg-gray-700/80 focus-within:ring-2 focus-within:ring-white/80 transition-colors duration-150 h-full flex flex-col">
-            <Link
-                href={href}
-                className="absolute inset-0 z-0 focus:outline-none"
-            >
-                <span className="sr-only">View details for {album.name}</span>
-            </Link>
-            <div className="relative aspect-square pointer-events-none">
+        <Link
+            href={href}
+            className="group block focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white rounded-xl"
+        >
+            <div className="relative aspect-square rounded-xl overflow-hidden bg-[#0e0e0e] ring-1 ring-inset ring-white/[0.08] group-hover:ring-white/[0.2] transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]">
                 {album.images && album.images.length > 0 ? (
-                    <img
+                    <FadeImage
                         src={album.images[0].url}
                         alt={`Cover art for ${album.name}`}
-                        className="object-cover w-full h-full -outline-offset-1 outline-1 outline-white/10 transition-transform duration-150 ease-out group-hover:scale-[1.02] motion-reduce:transition-none motion-reduce:group-hover:scale-100"
+                        className="object-cover w-full h-full transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:scale-[1.03] motion-reduce:transition-none motion-reduce:group-hover:scale-100"
                     />
                 ) : (
-                    <div className="w-full h-full bg-gray-700 flex items-center justify-center text-gray-400">
+                    <div className="w-full h-full flex items-center justify-center text-xs text-[#8e8e8e]">
                         No Cover
                     </div>
                 )}
-            </div>
-            <div className="p-4 flex-1 flex flex-col pointer-events-none">
-                <h2 className="font-bold text-lg truncate" title={album.name}>{album.name}</h2>
-                <p className="text-gray-300 truncate">{(album.artists ?? []).map((a: any) => a.name).join(', ')}</p>
-                {album.genres && album.genres.length > 0 && (
-                    <p className="text-xs text-gray-400 mt-1 truncate">
-                        {album.genres.join(', ')}
-                    </p>
+
+                {isNonAlbum && (
+                    <span className="absolute top-2.5 left-2.5 px-2 py-0.5 rounded-full bg-black/70 backdrop-blur-md border border-white/10 text-[10px] uppercase tracking-wider text-[#e8e6e3]">
+                        {album.album_type}
+                    </span>
                 )}
-                <p className="text-sm text-gray-400 mt-2 tabular-nums">
-                    {[
-                        album.album_type ? album.album_type.charAt(0).toUpperCase() + album.album_type.slice(1) : null,
-                        album.release_date ? album.release_date.split('-')[0] : null,
-                        typeof album.total_tracks === 'number'
-                            ? `${album.total_tracks} ${album.total_tracks === 1 ? 'song' : 'songs'}`
-                            : null,
-                    ].filter(Boolean).join(' • ')}
+            </div>
+
+            <div className="pt-3 space-y-0.5">
+                <h3
+                    className="font-medium text-sm text-[#e8e6e3] group-hover:text-white truncate transition-colors duration-200"
+                    title={album.name}
+                >
+                    {album.name}
+                </h3>
+                <p className="text-xs text-[#8e8e8e] truncate tabular-nums">
+                    {[artists, year].filter(Boolean).join(' · ')}
                 </p>
             </div>
-        </div>
+        </Link>
     );
 };
 

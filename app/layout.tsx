@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist, Geist_Mono, Instrument_Serif } from "next/font/google";
 import "./globals.css";
 import { Analytics } from '@vercel/analytics/next';
 import { SpeedInsights } from '@vercel/speed-insights/next';
@@ -14,19 +14,26 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const instrumentSerif = Instrument_Serif({
+  variable: "--font-instrument-serif",
+  weight: "400",
+  style: ["normal", "italic"],
+  subsets: ["latin"],
+});
+
 export const metadata: Metadata = {
-  title: "Doutify",
-  description: "Search for your favorite albums and artists on Doutify. Explore album details, tracks, and more.",
-  keywords: "spotify, music, album, search, artist, tracks, doutify, lyrics, discography",
+  title: "Doutify — Minimalist Music Discovery",
+  description: "Explore albums, tracklists, and daily new releases in a calm, minimalist listening index.",
+  keywords: "spotify, music, album, search, artist, tracks, doutify, discography, new releases",
   openGraph: {
-    title: "Doutify",
-    description: "Search for your favorite albums and artists on Doutify. Explore album details, tracks, and more.",
+    title: "Doutify — Minimalist Music Discovery",
+    description: "Explore albums, tracklists, and daily new releases in a calm, minimalist listening index.",
     type: "website",
   },
 };
 
 export const viewport: Viewport = {
-  themeColor: "#111827",
+  themeColor: "#050505",
 };
 
 export default function RootLayout({
@@ -37,7 +44,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} ${instrumentSerif.variable} antialiased min-h-screen bg-[#050505] text-[#e8e6e3]`}
       >
         {children}
         <Analytics />

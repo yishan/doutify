@@ -2,12 +2,13 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import type { SpotifyAlbumSummary } from '@/lib/spotify';
 import AlbumCard from '@/components/AlbumCard';
-
+import Header from '../components/Header';
 import Footer from '../components/Footer';
 
-export default function NewReleases() {
-    const [albums, setAlbums] = useState<any[]>([]);
+export default function NewReleasesPage() {
+    const [albums, setAlbums] = useState<SpotifyAlbumSummary[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(false);
 
@@ -17,7 +18,7 @@ export default function NewReleases() {
         try {
             const res = await fetch('/api/spotify/new-releases');
             if (!res.ok) throw new Error('Failed to fetch new releases');
-            const data = await res.json();
+            const data = (await res.json()) as { albums?: { items?: SpotifyAlbumSummary[] } };
             if (data.albums && data.albums.items) {
                 setAlbums(data.albums.items);
             } else {
@@ -36,56 +37,60 @@ export default function NewReleases() {
     }, []);
 
     return (
-        <div className="min-h-screen bg-gray-900 text-white p-8 font-sans flex flex-col gap-6">
-            <div className="max-w-6xl mx-auto w-full flex-1">
-                <div className="flex justify-center mb-8">
-                    <Link href="/" className="p-4 rounded-lg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white transition-colors duration-150">
-                        <h1 className="text-4xl font-bold text-green-500 text-balance">Doutify</h1>
-                    </Link>
+        <div className="min-h-screen bg-[#050505] text-[#e8e6e3] flex flex-col">
+            <Header />
+            <main className="max-w-5xl mx-auto w-full flex-1 px-6 py-10 sm:py-14">
+                <div className="mb-10 pb-6 border-b border-white/[0.08]">
+                    <p className="text-[11px] uppercase tracking-[0.2em] text-[#1db954] mb-2 font-mono">
+                        Daily Rotation
+                    </p>
+                    <h1 className="font-serif text-4xl sm:text-5xl text-[#e8e6e3] tracking-tight">
+                        New Releases
+                    </h1>
+                    <p className="text-sm text-[#8e8e8e] mt-2">
+                        Recent studio albums and notable releases sourced daily from Spotify.
+                    </p>
                 </div>
 
-                <h2 className="text-2xl font-bold mb-6 text-balance">New Releases</h2>
-
                 {loading ? (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 mb-12">
-                        {[...Array(8)].map((_, i) => (
-                            <div key={i} className="bg-gray-800 rounded-lg overflow-hidden animate-pulse">
-                                <div className="aspect-square bg-gray-700" />
-                                <div className="p-4 space-y-2">
-                                    <div className="h-5 bg-gray-700 rounded w-3/4" />
-                                    <div className="h-4 bg-gray-700 rounded w-1/2" />
-                                    <div className="h-3.5 bg-gray-700 rounded w-2/3" />
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-x-5 gap-y-8 mb-12">
+                        {[...Array(12)].map((_, i) => (
+                            <div key={i} className="animate-pulse">
+                                <div className="aspect-square rounded-xl bg-white/[0.05] ring-1 ring-inset ring-white/[0.06]" />
+                                <div className="pt-3 space-y-2">
+                                    <div className="h-4 bg-white/[0.06] rounded w-3/4" />
+                                    <div className="h-3 bg-white/[0.04] rounded w-1/2" />
                                 </div>
                             </div>
                         ))}
                     </div>
                 ) : error || albums.length === 0 ? (
-                    <div className="bg-gray-800 rounded-lg p-8 text-center text-gray-300 mb-12">
-                        <p className="mb-4">{error ? 'Failed to load new releases.' : 'No new releases found.'}</p>
+                    <div className="rounded-2xl border border-white/[0.08] bg-[#0e0e0e] p-10 text-center text-[#a3a3a3] mb-12">
+                        <p className="mb-5 text-sm">{error ? 'Failed to load new releases.' : 'No new releases found.'}</p>
                         <div className="flex justify-center gap-3">
                             <button
                                 type="button"
                                 onClick={fetchNewReleases}
-                                className="min-h-[44px] px-5 py-2.5 bg-gray-700 hover:bg-gray-600 text-white rounded-lg font-medium transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+                                className="min-h-[40px] px-5 py-2 rounded-full border border-white/[0.12] bg-white/[0.04] hover:bg-white/[0.08] text-[#e8e6e3] text-sm font-medium transition-colors duration-200 focus-visible:outline-2 focus-visible:outline-white"
                             >
                                 Retry
                             </button>
                             <Link
                                 href="/"
-                                className="inline-flex items-center min-h-[44px] px-5 py-2.5 bg-green-500 hover:bg-green-600 text-black rounded-lg font-bold transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+                                className="inline-flex items-center min-h-[40px] px-5 py-2 rounded-full bg-[#1db954] hover:bg-[#1ed760] text-[#050505] text-sm font-semibold transition-colors duration-200 focus-visible:outline-2 focus-visible:outline-white"
                             >
                                 Back to Search
                             </Link>
                         </div>
                     </div>
                 ) : (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 mb-12">
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-x-5 gap-y-8 mb-12">
                         {albums.map((album) => (
                             <AlbumCard key={album.id} album={album} />
                         ))}
                     </div>
                 )}
-            </div>
+            </main>
             <Footer />
         </div>
     );
