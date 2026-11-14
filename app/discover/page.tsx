@@ -1,3 +1,4 @@
+import type { Metadata } from 'next';
 import {
     extractPlaylistTracks,
     spotifyFetch,
@@ -7,6 +8,10 @@ import {
 import DiscoverClient from './DiscoverClient';
 import fs from 'fs/promises';
 import path from 'path';
+
+export const metadata: Metadata = {
+    title: 'Curated Playlist · Doutify',
+};
 
 const CACHE_FILE = path.join(process.cwd(), 'app/discover/playlist_cache.json');
 const CACHE_DURATION_MS = 5 * 24 * 60 * 60 * 1000; // 5 days

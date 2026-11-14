@@ -1,9 +1,14 @@
+import type { Metadata } from 'next';
 import fs from 'fs/promises';
 import path from 'path';
 import Link from 'next/link';
 import ReactMarkdown from 'react-markdown';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
+
+export const metadata: Metadata = {
+    title: 'Privacy Policy · Doutify',
+};
 
 export default async function PrivacyPolicy() {
     const filePath = path.join(process.cwd(), 'PRIVACY_POLICY.md');

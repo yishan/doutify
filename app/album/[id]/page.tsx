@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import type { SpotifyAlbumSummary, SpotifyTrackItem } from '@/lib/spotify';
 import { saveRecentAlbum } from '@/lib/recentAlbums';
+import { isAlbumSaved, toggleSavedAlbum } from '@/lib/savedAlbums';
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
 import FadeImage from '../../components/FadeImage';
@@ -256,6 +257,7 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
     const [error, setError] = useState('');
     const [discoveryAlbums, setDiscoveryAlbums] = useState<SpotifyAlbumSummary[]>([]);
     const [loadingDiscovery, setLoadingDiscovery] = useState(true);
+    const [saved, setSaved] = useState(false);
     const [previewTarget, setPreviewTarget] = useState<{
         type: 'album' | 'track';
         id: string;
@@ -290,6 +292,7 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
                     setError(data.error || 'Failed to load album details.');
                 } else {
                     setAlbum(data);
+                    setSaved(isAlbumSaved(data.id));
                 }
             } catch {
                 setError('Failed to load album details.');
@@ -327,6 +330,13 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
         if (album) {
             saveRecentAlbum(album);
             fetchDiscovery();
+            const artistsLabel = (album.artists ?? []).map((a) => a.name).join(', ');
+            document.title = artistsLabel
+                ? `${album.name} — ${artistsLabel} · Doutify`
+                : `${album.name} · Doutify`;
+            return () => {
+                document.title = 'Doutify — Minimalist Music Discovery';
+            };
         }
     }, [album, id]);
 
@@ -543,6 +553,23 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
                                     Download Art
                                 </button>
                             )}
+
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    const result = toggleSavedAlbum(album);
+                                    setSaved(result.saved);
+                                }}
+                                aria-pressed={saved}
+                                className={`inline-flex items-center gap-1.5 min-h-[42px] px-4 py-2.5 rounded-full border text-sm transition-colors duration-200 focus-visible:outline-2 focus-visible:outline-white ${
+                                    saved
+                                        ? 'border-[#1db954]/50 bg-[#1db954]/15 text-[#1db954]'
+                                        : 'border-white/[0.12] bg-white/[0.03] hover:bg-white/[0.08] text-[#e8e6e3]'
+                                }`}
+                            >
+                                <span>{saved ? '★' : '☆'}</span>
+                                <span>{saved ? 'Saved' : 'Save'}</span>
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -589,6 +616,25 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
                     {album.external_urls?.spotify && (
                         <QuickCopyChip text={album.external_urls.spotify} label="Link" />
                     )}
+                    <span aria-hidden="true" className="h-4 w-px bg-white/[0.1] mx-1" />
+                    <a
+                        href={`https://search.douban.com/music/subject_search?search_text=${encodeURIComponent(
+                            `${album.name} ${primaryArtistName || ''}`.trim()
+                        )}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="px-3 py-1.5 rounded-full text-xs border border-white/[0.08] bg-white/[0.02] hover:bg-white/[0.07] hover:border-white/[0.16] text-[#a3a3a3] hover:text-[#e8e6e3] transition-all duration-200 focus-visible:outline-2 focus-visible:outline-white"
+                    >
+                        Search Douban ↗
+                    </a>
+                    <a
+                        href="https://music.douban.com/new_subject"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="px-3 py-1.5 rounded-full text-xs border border-white/[0.08] bg-white/[0.02] hover:bg-white/[0.07] hover:border-white/[0.16] text-[#a3a3a3] hover:text-[#e8e6e3] transition-all duration-200 focus-visible:outline-2 focus-visible:outline-white"
+                    >
+                        Add to Douban ↗
+                    </a>
                 </div>
 
                 <section className="mb-14">

@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, Suspense } from 'react';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import type { SpotifyAlbumSummary } from '@/lib/spotify';
 import { getRecentAlbums, clearRecentAlbums } from '@/lib/recentAlbums';
+import { getSavedAlbums, clearSavedAlbums } from '@/lib/savedAlbums';
 import Header from './components/Header';
 import NewReleases from './components/NewReleases';
 import Footer from './components/Footer';
@@ -38,6 +39,7 @@ function SearchContent() {
   const [typeFilter, setTypeFilter] = useState<'all' | 'album' | 'single'>('all');
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
   const [recentAlbums, setRecentAlbums] = useState<SpotifyAlbumSummary[]>([]);
+  const [savedAlbums, setSavedAlbums] = useState<SpotifyAlbumSummary[]>([]);
   const prevSearchQRef = useRef(initialQuery);
 
   const ITEMS_PER_PAGE = 10;
@@ -61,6 +63,7 @@ function SearchContent() {
       // Ignore storage errors
     }
     setRecentAlbums(getRecentAlbums());
+    setSavedAlbums(getSavedAlbums());
   }, []);
 
   useEffect(() => {
@@ -363,6 +366,32 @@ function SearchContent() {
           </div>
         )}
       </div>
+
+      {!hasSearched && savedAlbums.length > 0 && (
+        <section className="max-w-5xl mx-auto w-full pb-8 mb-4 border-b border-white/[0.08]">
+          <div className="flex items-baseline justify-between mb-5">
+            <div className="flex items-baseline gap-2.5">
+              <h2 className="font-serif text-2xl text-[#e8e6e3] tracking-tight">Saved Crate</h2>
+              <span className="text-xs font-mono text-[#1db954] tabular-nums">{savedAlbums.length}</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                clearSavedAlbums();
+                setSavedAlbums([]);
+              }}
+              className="text-xs text-[#8e8e8e] hover:text-[#e8e6e3] transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-white rounded"
+            >
+              Clear saved
+            </button>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-x-5 gap-y-6">
+            {savedAlbums.map((album) => (
+              <AlbumCard key={album.id} album={album} />
+            ))}
+          </div>
+        </section>
+      )}
 
       {!hasSearched && recentAlbums.length > 0 && (
         <section className="max-w-5xl mx-auto w-full pb-8 mb-4 border-b border-white/[0.08]">

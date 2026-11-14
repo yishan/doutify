@@ -34,6 +34,13 @@ export default function NewReleasesPage() {
     };
 
     useEffect(() => {
+        document.title = 'New Releases · Doutify';
+        return () => {
+            document.title = 'Doutify — Minimalist Music Discovery';
+        };
+    }, []);
+
+    useEffect(() => {
         fetchNewReleases();
     }, []);
 

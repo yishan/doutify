@@ -10,13 +10,13 @@ Doutify is a music album exploration platform designed to make it quick and easy
 
 ## ✨ Features
 
-- 🔍 **Smart Search** — Search albums and artists with pagination (10 results per page) and sorting by release date (newest / oldest / relevance).
-- 💿 **Album Details** — View complete album info: cover art, artists, record label, release date, popularity, genres, external IDs (UPC / ISRC, etc.), and the Spotify link.
-- 📋 **Copy & Download** — One-click copy for the album name, artists, label, release date, external IDs, Spotify link, or the full track list; download the cover art directly from the detail page.
-- 🆕 **Discover** — See the latest releases pulled from a curated public Spotify playlist, cached locally for 5 days; also browse the full playlist on the [Discover page](./app/discover/page.tsx) or a dedicated [New Releases page](./app/new/page.tsx).
-- 🎵 **Track List** — Full track list with per-track durations and copy support.
-- 🔗 **Related Albums** — A "Discovery" section on each album page shows more releases from the same artist.
-- 🎨 **Modern UI** — Responsive dark-mode interface built with [Tailwind CSS](https://tailwindcss.com/) and the [Geist](https://vercel.com/font) font family.
+- 🔍 **Smart Search & Direct Link Jump** — Debounced live search with album type filters (`All` / `Albums` / `Singles & EPs`), release date sorting, pagination (10 results per page), `⌘K` / `/` search shortcuts, and instant Spotify album URL / URI detection (`open.spotify.com/album/...` or `spotify:album:...`).
+- 💿 **Album Details & Archival Metadata** — View complete album metadata: high-resolution cover art, artists, record label, release date, multi-disc track grouping, explicit markers, UPC / EAN barcodes, copyrights, and Spotify links.
+- 📋 **Copy, Download & Douban Workflow** — One-click `Copy All Info`, `Copy Tracklist`, `Copy Timed List`, individual metadata chips, per-track title copy, direct cover art download, and `Search Douban` / `Add to Douban` shortcuts.
+- 🎧 **Album & Per-Track Audio Preview** — Play either the full album or any individual track inline via Spotify embeds.
+- 🆕 **Daily New Releases & Curated Playlist** — Fresh releases aggregated daily (24h revalidation) from Spotify `tag:new` album search combined with a live curated Spotify playlist (`playlist_cache.json` fallback), filterable on [/new](./app/new/page.tsx) and [/discover](./app/discover/page.tsx).
+- ★ **Saved Crate & Recently Viewed** — Bookmark albums into a persistent local Saved Crate and revisit up to 5 recently inspected albums right from the homepage.
+- 🎨 **Obsidian Editorial UI** — Minimalist `#050505` dark interface built with [Tailwind CSS](https://tailwindcss.com/) and `Instrument Serif` + `Geist` + `Geist Mono` typography.
 
 ## 🛠 Tech Stack
 
@@ -71,15 +71,21 @@ npm run lint     # run ESLint
 ```
 album-info/
 ├── app/                        # Next.js App Router (pages + API routes)
-│   ├── page.tsx                # Home: search + Discover (new releases)
-│   ├── album/[id]/page.tsx     # Album detail page
-│   ├── new/page.tsx            # New Releases page
+│   ├── page.tsx                # Home: live search, link detector, Saved Crate, Recently Viewed, New Releases
+│   ├── not-found.tsx           # Editorial 404 page
+│   ├── album/[id]/
+│   │   ├── page.tsx            # Album detail, track preview, Douban copy & shortcuts
+│   │   └── loading.tsx         # Album detail loading skeleton
+│   ├── new/
+│   │   ├── page.tsx            # Daily New Releases page with type filters
+│   │   └── loading.tsx         # New releases loading skeleton
 │   ├── discover/
 │   │   ├── page.tsx            # Curated playlist page (server component)
-│   │   ├── DiscoverClient.tsx  # Playlist table UI
-│   │   └── playlist_cache.json # Local cache of playlist data (5 days)
+│   │   ├── DiscoverClient.tsx  # Filterable playlist table UI
+│   │   ├── loading.tsx         # Playlist loading skeleton
+│   │   └── playlist_cache.json # Local fallback cache of playlist data
 │   ├── privacy/page.tsx        # Privacy policy page (renders PRIVACY_POLICY.md)
-│   ├── components/             # Footer, NewReleases
+│   ├── components/             # Header, Footer, FadeImage, NewReleases
 │   └── api/spotify/            # Server-side proxy to the Spotify Web API
 │       ├── search/route.ts
 │       ├── album/[id]/route.ts
@@ -89,7 +95,9 @@ album-info/
 ├── components/
 │   └── AlbumCard.tsx           # Reusable album card component
 ├── lib/
-│   └── spotify.ts              # Spotify auth (client credentials flow)
+│   ├── spotify.ts              # Spotify Client Credentials cache & schema normalizers
+│   ├── recentAlbums.ts         # LocalStorage Recently Viewed shelf helpers
+│   └── savedAlbums.ts          # LocalStorage Saved Crate helpers
 └── PRIVACY_POLICY.md           # Source of the privacy policy page
 ```
 
@@ -99,11 +107,11 @@ All routes proxy to the [Spotify Web API](https://developer.spotify.com/document
 
 | Route | Description |
 | ----- | ----------- |
-| `GET /api/spotify/search?q=&type=&limit=&offset=` | Search albums & artists |
-| `GET /api/spotify/album/[id]` | Album details (tracks, label, external IDs…) |
-| `GET /api/spotify/artist/[id]/albums` | Latest albums by an artist (top 6) |
+| `GET /api/spotify/search?q=&type=&limit=&offset=` | Search albums & artists (clamped to Development Mode limits) |
+| `GET /api/spotify/album/[id]` | Album details with multi-page track pagination (>50 tracks supported) |
+| `GET /api/spotify/artist/[id]/albums` | Latest releases by an artist (top 6) |
 | `GET /api/spotify/playlist/[id]` | Spotify playlist details |
-| `GET /api/spotify/new-releases` | New releases derived from the cached playlist (with fallback to Spotify's new-releases browse and individual lookups) |
+| `GET /api/spotify/new-releases` | Daily refreshed hybrid feed (`tag:new` album search + live playlist, with `/browse/new-releases` and local cache fallbacks) |
 
 ## ☁️ Deployment
 
