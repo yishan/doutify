@@ -1,6 +1,7 @@
+/* eslint-disable @next/next/no-img-element */
 'use client';
 
-import { useState, useEffect, use } from 'react';
+import { Fragment, useState, useEffect, use } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import type { SpotifyAlbumSummary, SpotifyTrackItem } from '@/lib/spotify';
@@ -12,6 +13,8 @@ import AlbumCard from '@/components/AlbumCard';
 interface AlbumDetailData extends SpotifyAlbumSummary {
     label?: string;
     popularity?: number;
+    release_date_precision?: string;
+    copyrights?: Array<{ text?: string; type?: string }>;
     external_ids?: Record<string, string>;
     tracks?: {
         items?: SpotifyTrackItem[];
@@ -64,7 +67,15 @@ const formatTotalDuration = (ms: number): string => {
     return `${minutes}:${String(seconds).padStart(2, '0')}`;
 };
 
-const QuickCopyChip = ({ text, label }: { text: string; label: string }) => {
+const QuickCopyChip = ({
+    text,
+    label,
+    highlighted = false,
+}: {
+    text: string;
+    label: string;
+    highlighted?: boolean;
+}) => {
     const [copied, setCopied] = useState(false);
 
     const handleCopy = async () => {
@@ -82,11 +93,104 @@ const QuickCopyChip = ({ text, label }: { text: string; label: string }) => {
             className={`px-3 py-1.5 rounded-full text-xs border transition-all duration-200 active:scale-[0.97] focus-visible:outline-2 focus-visible:outline-white ${
                 copied
                     ? 'border-[#1db954]/60 bg-[#1db954]/15 text-[#1db954]'
-                    : 'border-white/[0.08] bg-white/[0.02] hover:bg-white/[0.07] hover:border-white/[0.16] text-[#a3a3a3] hover:text-[#e8e6e3]'
+                    : highlighted
+                      ? 'border-white/[0.2] bg-white/[0.06] hover:bg-white/[0.11] text-[#e8e6e3]'
+                      : 'border-white/[0.08] bg-white/[0.02] hover:bg-white/[0.07] hover:border-white/[0.16] text-[#a3a3a3] hover:text-[#e8e6e3]'
             }`}
         >
             {copied ? `Copied ${label}` : `Copy ${label}`}
         </button>
+    );
+};
+
+const TrackRow = ({
+    track,
+    fallbackNumber,
+}: {
+    track: SpotifyTrackItem;
+    fallbackNumber: number;
+}) => {
+    const [copied, setCopied] = useState(false);
+
+    const handleCopyTrack = async () => {
+        if (!track.name) return;
+        const success = await copyToClipboard(track.name);
+        if (success) {
+            setCopied(true);
+            setTimeout(() => setCopied(false), 1200);
+        }
+    };
+
+    const displayNumber = track.track_number ?? fallbackNumber;
+
+    return (
+        <div className="flex items-center gap-3 sm:gap-4 px-2 py-3.5 hover:bg-white/[0.03] transition-colors duration-150 group">
+            <span className="w-7 text-right text-xs font-mono text-[#8e8e8e] tabular-nums shrink-0">
+                {displayNumber}
+            </span>
+            <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 min-w-0">
+                    <span className="text-sm font-medium text-[#e8e6e3] group-hover:text-white truncate">
+                        {track.name}
+                    </span>
+                    {track.explicit && (
+                        <span
+                            className="inline-flex items-center justify-center text-[10px] font-mono px-1.5 py-0.5 rounded bg-white/[0.08] text-[#a3a3a3] shrink-0"
+                            title="Explicit"
+                        >
+                            E
+                        </span>
+                    )}
+                </div>
+                {(track.artists ?? []).length > 0 && (
+                    <div className="text-xs text-[#8e8e8e] truncate mt-0.5">
+                        {(track.artists ?? []).map((a) => a.name).join(', ')}
+                    </div>
+                )}
+            </div>
+            <div className="flex items-center gap-1.5 shrink-0">
+                {track.name && (
+                    <button
+                        type="button"
+                        onClick={handleCopyTrack}
+                        aria-label={`Copy track title ${track.name}`}
+                        title={copied ? 'Copied title' : 'Copy track title'}
+                        className={`p-1.5 rounded-full transition-all duration-150 focus-visible:outline-2 focus-visible:outline-white ${
+                            copied
+                                ? 'text-[#1db954] opacity-100'
+                                : 'text-[#8e8e8e] hover:text-[#e8e6e3] opacity-60 sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100'
+                        }`}
+                    >
+                        {copied ? (
+                            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                            </svg>
+                        ) : (
+                            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                            </svg>
+                        )}
+                    </button>
+                )}
+                {track.external_urls?.spotify && (
+                    <a
+                        href={track.external_urls.spotify}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        aria-label={`Open ${track.name || 'track'} in Spotify`}
+                        title="Open track in Spotify"
+                        className="p-1.5 rounded-full text-[#8e8e8e] hover:text-[#1db954] opacity-60 sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100 transition-all duration-150 focus-visible:outline-2 focus-visible:outline-white"
+                    >
+                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                        </svg>
+                    </a>
+                )}
+                <span className="w-11 text-right text-xs font-mono text-[#8e8e8e] tabular-nums">
+                    {formatTrackDuration(track.duration_ms || 0)}
+                </span>
+            </div>
+        </div>
     );
 };
 
@@ -223,10 +327,30 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
     const totalDurationMs = trackItems.reduce((acc, track) => acc + (track?.duration_ms || 0), 0);
     const artistNames = (album.artists ?? []).map((a) => a.name).join(', ');
     const trackListText = trackItems
-        .map((track, index) => `${index + 1}. ${track.name || ''}`)
+        .map((track, index) => `${track.track_number ?? index + 1}. ${track.name || ''}`)
         .join('\n');
     const upc = album.external_ids?.upc || album.external_ids?.ean || '';
     const primaryArtistName = album.artists?.[0]?.name;
+    const hasMultipleDiscs = trackItems.some((track) => (track.disc_number ?? 1) > 1);
+    const copyrightLines = Array.from(
+        new Set(
+            (album.copyrights ?? [])
+                .map((c) => c?.text?.trim())
+                .filter((text): text is string => Boolean(text))
+        )
+    );
+
+    const allInfoText = [
+        `Title: ${album.name}`,
+        artistNames ? `Artist: ${artistNames}` : null,
+        album.album_type ? `Type: ${album.album_type}` : null,
+        album.release_date ? `Release Date: ${album.release_date}` : null,
+        album.label ? `Label: ${album.label}` : null,
+        upc ? `Barcode/UPC: ${upc}` : null,
+        trackListText ? `Tracklist:\n${trackListText}` : null,
+    ]
+        .filter(Boolean)
+        .join('\n');
 
     const metaParts = [
         album.album_type ? album.album_type.charAt(0).toUpperCase() + album.album_type.slice(1) : null,
@@ -273,6 +397,7 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
                                     alt={album.name}
                                     width={270}
                                     height={270}
+                                    loading="eager"
                                     className="object-cover w-full h-full"
                                 />
                                 <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity duration-200 flex items-center justify-center backdrop-blur-sm">
@@ -372,6 +497,7 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
                     <span className="text-[11px] uppercase tracking-[0.16em] text-[#8e8e8e] font-mono mr-1">
                         Quick Copy
                     </span>
+                    <QuickCopyChip text={allInfoText} label="All Info" highlighted />
                     <QuickCopyChip text={album.name} label="Title" />
                     {artistNames && <QuickCopyChip text={artistNames} label="Artist" />}
                     {album.release_date && <QuickCopyChip text={album.release_date} label="Date" />}
@@ -394,30 +520,33 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
                     </div>
 
                     <div className="divide-y divide-white/[0.06] border-t border-b border-white/[0.08]">
-                        {trackItems.map((track, index) => (
-                            <div
-                                key={track.id || index}
-                                className="flex items-center gap-4 px-2 py-3.5 hover:bg-white/[0.03] transition-colors duration-150 group"
-                            >
-                                <span className="w-7 text-right text-xs font-mono text-[#8e8e8e] tabular-nums shrink-0">
-                                    {index + 1}
-                                </span>
-                                <div className="flex-1 min-w-0">
-                                    <div className="text-sm font-medium text-[#e8e6e3] group-hover:text-white truncate">
-                                        {track.name}
-                                    </div>
-                                    {(track.artists ?? []).length > 0 && (
-                                        <div className="text-xs text-[#8e8e8e] truncate mt-0.5">
-                                            {(track.artists ?? []).map((a) => a.name).join(', ')}
+                        {trackItems.map((track, index) => {
+                            const discNumber = track.disc_number ?? 1;
+                            const prevDiscNumber = index > 0 ? (trackItems[index - 1]?.disc_number ?? 1) : discNumber;
+                            const showDiscHeader = hasMultipleDiscs && (index === 0 || discNumber !== prevDiscNumber);
+
+                            return (
+                                <Fragment key={track.id || index}>
+                                    {showDiscHeader && (
+                                        <div className="px-2 pt-4 pb-2 text-[11px] uppercase tracking-[0.16em] text-[#8e8e8e] font-mono bg-white/[0.015]">
+                                            Disc {discNumber}
                                         </div>
                                     )}
-                                </div>
-                                <span className="text-xs font-mono text-[#8e8e8e] tabular-nums shrink-0">
-                                    {formatTrackDuration(track.duration_ms || 0)}
-                                </span>
-                            </div>
-                        ))}
+                                    <TrackRow track={track} fallbackNumber={index + 1} />
+                                </Fragment>
+                            );
+                        })}
                     </div>
+
+                    {(album.label || upc || copyrightLines.length > 0) && (
+                        <div className="mt-4 text-xs text-[#8e8e8e] font-mono space-y-1">
+                            {album.label && <div>Label: {album.label}</div>}
+                            {upc && <div>UPC/EAN: {upc}</div>}
+                            {copyrightLines.map((line) => (
+                                <div key={line}>{line}</div>
+                            ))}
+                        </div>
+                    )}
                 </section>
 
                 {(loadingDiscovery || discoveryAlbums.length > 0) && (

@@ -33,6 +33,10 @@ export interface SpotifyTrackItem {
     id?: string;
     name?: string;
     duration_ms?: number;
+    disc_number?: number;
+    track_number?: number;
+    explicit?: boolean;
+    external_urls?: { spotify?: string };
     artists?: SpotifyArtistSummary[];
     album?: SpotifyAlbumSummary;
 }

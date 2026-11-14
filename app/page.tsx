@@ -25,7 +25,9 @@ function SearchContent() {
   const [hasSearched, setHasSearched] = useState(false);
   const [totalResults, setTotalResults] = useState(0);
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc' | null>(null);
+  const [typeFilter, setTypeFilter] = useState<'all' | 'album' | 'single'>('all');
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
+  const prevSearchQRef = useRef(initialQuery);
 
   const ITEMS_PER_PAGE = 10;
 
@@ -69,10 +71,36 @@ function SearchContent() {
     });
   };
 
+  const handleClearRecent = () => {
+    setRecentSearches([]);
+    try {
+      localStorage.removeItem(RECENT_STORAGE_KEY);
+    } catch {
+      // Ignore storage errors
+    }
+  };
+
   useEffect(() => {
     const currentQ = searchParams.get('q') || '';
-    setQuery(currentQ);
+    if (currentQ !== prevSearchQRef.current) {
+      prevSearchQRef.current = currentQ;
+      if (document.activeElement !== inputRef.current || currentQ === '') {
+        setQuery(currentQ);
+      }
+    }
   }, [searchParams]);
+
+  useEffect(() => {
+    const trimmed = query.trim();
+    const urlQ = (searchParams.get('q') || '').trim();
+    if (trimmed.length < 2 || trimmed === urlQ) return;
+
+    const timer = setTimeout(() => {
+      router.replace(`${pathname}?q=${encodeURIComponent(trimmed)}&page=1`, { scroll: false });
+    }, 380);
+
+    return () => clearTimeout(timer);
+  }, [query, pathname, router, searchParams]);
 
   const performSearch = async (searchQuery: string, page: number, order: 'asc' | 'desc' | null) => {
     if (!searchQuery) return;
@@ -191,6 +219,18 @@ function SearchContent() {
   const currentPage = parseInt(searchParams.get('page') || '1', 10);
   const currentQ = searchParams.get('q') || '';
   const suggestions = recentSearches.length > 0 ? recentSearches : SEED_QUERIES;
+  const filteredAlbums = albums.filter((album) =>
+    typeFilter === 'all'
+      ? true
+      : typeFilter === 'album'
+        ? album.album_type === 'album'
+        : album.album_type !== 'album'
+  );
+  const typeFilterOptions: Array<{ value: 'all' | 'album' | 'single'; label: string }> = [
+    { value: 'all', label: 'All' },
+    { value: 'album', label: 'Albums' },
+    { value: 'single', label: 'Singles & EPs' },
+  ];
 
   return (
     <main className="max-w-5xl mx-auto w-full flex-1 px-6 py-10 sm:py-14">
@@ -255,7 +295,7 @@ function SearchContent() {
             <button
               type="submit"
               disabled={loading || !query.trim()}
-              className="mr-2 min-h-[38px] px-5 py-2 rounded-xl bg-[#1db954] hover:bg-[#1ed760] text-[#050505] text-sm font-semibold transition-all duration-200 active:scale-[0.97] disabled:opacity-40 disabled:cursor-not-allowed focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white shrink-0"
+              className="mr-2 min-h-[38px] px-5 py-2 rounded-xl bg-[#1db954] hover:bg-[#1ed760] text-[#050505] text-sm font-semibold transition-all duration-200 active:scale-[0.97] disabled:bg-white/[0.06] disabled:text-[#8e8e8e] disabled:opacity-100 disabled:cursor-not-allowed focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white shrink-0"
             >
               {loading ? 'Searching…' : 'Search'}
             </button>
@@ -280,6 +320,15 @@ function SearchContent() {
                 {term}
               </button>
             ))}
+            {recentSearches.length > 0 && (
+              <button
+                type="button"
+                onClick={handleClearRecent}
+                className="px-2.5 py-1 rounded-full text-[#8e8e8e] hover:text-[#e8e6e3] transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-white"
+              >
+                Clear
+              </button>
+            )}
           </div>
         )}
       </div>
@@ -293,20 +342,42 @@ function SearchContent() {
           </div>
 
           {albums.length > 0 && (
-            <div className="flex items-center gap-2">
-              <label htmlFor="sort-order" className="text-xs text-[#8e8e8e]">
-                Sort
-              </label>
-              <select
-                id="sort-order"
-                value={sortOrder || ''}
-                onChange={handleSortChange}
-                className="bg-[#0e0e0e] text-[#e8e6e3] text-xs border border-white/[0.1] rounded-full px-3 py-1.5 focus-visible:outline-2 focus-visible:outline-white"
-              >
-                <option value="">Relevance</option>
-                <option value="desc">Newest First</option>
-                <option value="asc">Oldest First</option>
-              </select>
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="flex items-center gap-1.5" role="group" aria-label="Filter result type">
+                {typeFilterOptions.map((option) => {
+                  const active = typeFilter === option.value;
+                  return (
+                    <button
+                      key={option.value}
+                      type="button"
+                      onClick={() => setTypeFilter(option.value)}
+                      className={`px-3 py-1 rounded-full text-xs font-medium transition-all duration-200 focus-visible:outline-2 focus-visible:outline-white ${
+                        active
+                          ? 'bg-[#e8e6e3] text-[#050505]'
+                          : 'border border-white/[0.1] bg-white/[0.02] text-[#a3a3a3] hover:text-[#e8e6e3] hover:bg-white/[0.06]'
+                      }`}
+                    >
+                      {option.label}
+                    </button>
+                  );
+                })}
+              </div>
+
+              <div className="flex items-center gap-2">
+                <label htmlFor="sort-order" className="text-xs text-[#8e8e8e]">
+                  Sort
+                </label>
+                <select
+                  id="sort-order"
+                  value={sortOrder || ''}
+                  onChange={handleSortChange}
+                  className="bg-[#0e0e0e] text-[#e8e6e3] text-xs border border-white/[0.1] rounded-full px-3 py-1.5 focus-visible:outline-2 focus-visible:outline-white"
+                >
+                  <option value="">Relevance</option>
+                  <option value="desc">Newest First</option>
+                  <option value="asc">Oldest First</option>
+                </select>
+              </div>
             </div>
           )}
         </div>
@@ -345,9 +416,22 @@ function SearchContent() {
         </div>
       )}
 
-      {!loading && albums.length > 0 && (
+      {!loading && albums.length > 0 && filteredAlbums.length === 0 && (
+        <div className="py-12 text-center text-[#8e8e8e] text-sm max-w-xl mx-auto">
+          <p className="mb-4">No {typeFilter === 'album' ? 'albums' : 'singles or EPs'} on this page of results.</p>
+          <button
+            type="button"
+            onClick={() => setTypeFilter('all')}
+            className="min-h-[38px] px-4 py-1.5 rounded-full border border-white/[0.12] bg-white/[0.04] hover:bg-white/[0.08] text-[#e8e6e3] text-xs font-medium transition-colors duration-200 focus-visible:outline-2 focus-visible:outline-white"
+          >
+            Show All Types
+          </button>
+        </div>
+      )}
+
+      {!loading && filteredAlbums.length > 0 && (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-x-5 gap-y-8 mb-12">
-          {albums.map((album) => (
+          {filteredAlbums.map((album) => (
             <AlbumCard key={album.id} album={album} currentQ={currentQ} currentPage={currentPage} />
           ))}
         </div>
