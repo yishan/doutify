@@ -7,6 +7,9 @@ interface AlbumDetailResponse {
     tracks?: {
         items?: Array<SpotifyTrackItem | null>;
         next?: string | null;
+        total?: number;
+        limit?: number;
+        offset?: number;
     };
     [key: string]: unknown;
 }
@@ -33,7 +36,26 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
             let nextUrl: string | null = data.tracks.next ?? null;
             let page = 0;
 
-            while (nextUrl && page < MAX_TRACK_PAGES) {
+            const { total, limit, offset = 0 } = data.tracks;
+            if (nextUrl && typeof total === 'number' && Number.isFinite(total)
+                && typeof limit === 'number' && Number.isFinite(limit) && limit > 0) {
+                const pageCount = Math.min(MAX_TRACK_PAGES, Math.ceil((total - offset - limit) / limit));
+                const pageUrl = nextUrl;
+                const pages = await Promise.all(Array.from({ length: Math.max(0, pageCount) }, (_, index) => {
+                    const url = new URL(pageUrl);
+                    url.searchParams.set('offset', String(offset + (index + 1) * limit));
+                    url.searchParams.set('limit', String(limit));
+                    return spotifyFetch<TrackPageResponse>(url.toString(), {
+                        next: { revalidate: 3600 },
+                    });
+                }));
+                for (const trackPage of pages) {
+                    if (Array.isArray(trackPage?.items)) {
+                        allItems.push(...trackPage.items.filter(Boolean));
+                    }
+                    nextUrl = trackPage?.next ?? null;
+                }
+            } else while (nextUrl && page < MAX_TRACK_PAGES) {
                 const nextPage = await spotifyFetch<TrackPageResponse>(nextUrl, {
                     next: { revalidate: 3600 },
                 });
