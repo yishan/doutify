@@ -205,6 +205,7 @@ export default function DiscoverClient({ playlist, tracks, error }: DiscoverClie
                                                 track.album?.id ? (
                                                     <Link
                                                         href={`/album/${track.album.id}`}
+                                                        prefetch={false}
                                                         aria-label={`View album ${track.album.name || track.name}`}
                                                         className="w-10 h-10 rounded-md overflow-hidden bg-[#0e0e0e] ring-1 ring-inset ring-white/[0.08] shrink-0 focus-visible:outline-2 focus-visible:outline-white"
                                                     >
@@ -235,6 +236,7 @@ export default function DiscoverClient({ playlist, tracks, error }: DiscoverClie
                                                     {track.album?.id ? (
                                                         <Link
                                                             href={`/album/${track.album.id}`}
+                                                            prefetch={false}
                                                             className="hover:underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-white rounded"
                                                         >
                                                             {track.name}
@@ -249,6 +251,7 @@ export default function DiscoverClient({ playlist, tracks, error }: DiscoverClie
                                                 {track.album?.id && track.album?.name && (
                                                     <Link
                                                         href={`/album/${track.album.id}`}
+                                                        prefetch={false}
                                                         className="block sm:hidden text-xs text-[#a3a3a3] hover:text-[#e8e6e3] truncate mt-0.5 focus-visible:outline-2 focus-visible:outline-white rounded"
                                                     >
                                                         {track.album.name}
@@ -261,6 +264,7 @@ export default function DiscoverClient({ playlist, tracks, error }: DiscoverClie
                                             {track.album?.id ? (
                                                 <Link
                                                     href={`/album/${track.album.id}`}
+                                                    prefetch={false}
                                                     className="hover:text-[#e8e6e3] hover:underline underline-offset-4 transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-white rounded"
                                                 >
                                                     {track.album.name}
