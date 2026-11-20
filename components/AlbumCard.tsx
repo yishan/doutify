@@ -20,6 +20,7 @@ const AlbumCard = ({ album, currentQ = '', currentPage = 1 }: AlbumCardProps) =>
     return (
         <Link
             href={href}
+            prefetch={false}
             className="group block focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white rounded-xl"
         >
             <div className="relative aspect-square rounded-xl overflow-hidden bg-[#0e0e0e] ring-1 ring-inset ring-white/[0.08] group-hover:ring-white/[0.2] transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]">
