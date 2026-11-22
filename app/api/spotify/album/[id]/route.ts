@@ -28,7 +28,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
 
     try {
         const data = await spotifyFetch<AlbumDetailResponse>(`/albums/${encodeURIComponent(id)}`, {
-            next: { revalidate: 3600 },
+            cache: 'no-store',
         });
 
         if (data?.tracks?.items && Array.isArray(data.tracks.items)) {
@@ -46,7 +46,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
                     url.searchParams.set('offset', String(offset + (index + 1) * limit));
                     url.searchParams.set('limit', String(limit));
                     return spotifyFetch<TrackPageResponse>(url.toString(), {
-                        next: { revalidate: 3600 },
+                        cache: 'no-store',
                     });
                 }));
                 for (const trackPage of pages) {
@@ -57,7 +57,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
                 }
             } else while (nextUrl && page < MAX_TRACK_PAGES) {
                 const nextPage = await spotifyFetch<TrackPageResponse>(nextUrl, {
-                    next: { revalidate: 3600 },
+                    cache: 'no-store',
                 });
                 if (Array.isArray(nextPage?.items)) {
                     allItems.push(...nextPage.items.filter(Boolean));
@@ -70,7 +70,9 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
             data.tracks.next = nextUrl;
         }
 
-        return NextResponse.json(data);
+        return NextResponse.json(data, {
+            headers: { 'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=3600' },
+        });
     } catch (error) {
         console.error('Spotify Album API Error:', error);
         const { message, status } = getErrorResponse(error);
